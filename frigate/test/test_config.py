@@ -68,6 +68,21 @@ class TestConfig(unittest.TestCase):
         assert frigate_config.detectors["cpu"].type == DetectorTypeEnum.cpu
         assert frigate_config.detectors["cpu"].model.width == 320
 
+    def test_default_camera_recordings_path(self):
+        frigate_config = FrigateConfig(**self.minimal)
+        assert (
+            frigate_config.cameras["back"].path == "/media/frigate/recordings"
+        )
+
+    def test_camera_recordings_path_must_be_absolute(self):
+        config = deep_merge(
+            self.minimal,
+            {"cameras": {"back": {"path": "recordings"}}},
+            override=True,
+        )
+
+        self.assertRaises(ValidationError, lambda: FrigateConfig(**config))
+
     @patch("frigate.detectors.detector_config.load_labels")
     def test_detector_custom_model_path(self, mock_labels):
         mock_labels.return_value = {}

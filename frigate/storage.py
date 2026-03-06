@@ -8,7 +8,7 @@ from pathlib import Path
 from peewee import SQL, fn
 
 from frigate.config import FrigateConfig
-from frigate.const import RECORD_DIR, REPLAY_CAMERA_PREFIX
+from frigate.const import REPLAY_CAMERA_PREFIX
 from frigate.models import Event, Recordings
 from frigate.util.builtin import clear_and_unlink
 
@@ -107,14 +107,28 @@ class StorageMaintainer(threading.Thread):
         """Return if storage needs cleanup."""
         # currently runs cleanup if less than 1 hour of space is left
         # disk_usage should not spin up disks
-        hourly_bandwidth = sum(
-            [b["bandwidth"] for b in self.camera_storage_stats.values()]
-        )
-        remaining_storage = round(shutil.disk_usage(RECORD_DIR).free / pow(2, 20), 1)
-        logger.debug(
-            f"Storage cleanup check: {hourly_bandwidth} hourly with remaining storage: {remaining_storage}."
-        )
-        return remaining_storage < hourly_bandwidth
+        bandwidth_per_path: dict[str, float] = {}
+
+        for camera, stats in self.camera_storage_stats.items():
+            path = self.config.get_camera_recordings_path(camera)
+            bandwidth_per_path[path] = bandwidth_per_path.get(path, 0) + stats.get(
+                "bandwidth", 0
+            )
+
+        for path, hourly_bandwidth in bandwidth_per_path.items():
+            try:
+                remaining_storage = round(shutil.disk_usage(path).free / pow(2, 20), 1)
+            except (FileNotFoundError, OSError):
+                continue
+
+            logger.debug(
+                f"Storage cleanup check: {hourly_bandwidth} hourly with remaining storage: {remaining_storage} for path {path}."
+            )
+
+            if remaining_storage < hourly_bandwidth:
+                return True
+
+        return False
 
     def reduce_storage_consumption(self) -> None:
         """Remove oldest hour of recordings."""

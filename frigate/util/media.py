@@ -93,6 +93,13 @@ def sync_recordings(
     try:
         logger.debug("Start sync recordings.")
 
+        def get_recordings_root(path: str) -> str:
+            path_obj = Path(path)
+            if len(path_obj.parents) >= 4:
+                return str(path_obj.parents[3])
+
+            return RECORD_DIR
+
         # start checking on the hour 36 hours ago
         check_point = datetime.datetime.now().replace(
             minute=0, second=0, microsecond=0
@@ -110,9 +117,11 @@ def sync_recordings(
         page_size = 1000
         num_pages = (recordings_count + page_size - 1) // page_size
         recordings_to_delete: list[dict] = []
+        recordings_roots = {RECORD_DIR}
 
         for page in range(num_pages):
             for recording in recordings_query.paginate(page, page_size):
+                recordings_roots.add(get_recordings_root(recording.path))
                 if not os.path.exists(recording.path):
                     recordings_to_delete.append(
                         {"id": recording.id, "path": recording.path}
@@ -175,22 +184,19 @@ def sync_recordings(
             return result
 
         # Only try to cleanup files if db cleanup was successful or dry_run
-        if limited:
-            # get recording files from last 36 hours
-            hour_check = f"{RECORD_DIR}/{check_point.strftime('%Y-%m-%d/%H')}"
-            files_on_disk = {
-                os.path.join(root, file)
-                for root, _, files in os.walk(RECORD_DIR)
-                for file in files
-                if root > hour_check
-            }
-        else:
-            # get all recordings files on disk and put them in a set
-            files_on_disk = {
-                os.path.join(root, file)
-                for root, _, files in os.walk(RECORD_DIR)
-                for file in files
-            }
+        # get recording files on disk and put them in a set
+        files_on_disk = set()
+        for recordings_root in recordings_roots:
+            for root, _, files in os.walk(recordings_root):
+                for file in files:
+                    file_path = os.path.join(root, file)
+
+                    if limited:
+                        file_mtime = os.path.getmtime(file_path)
+                        if file_mtime < check_point.timestamp():
+                            continue
+
+                    files_on_disk.add(file_path)
 
         result.files_checked = len(files_on_disk)
 
