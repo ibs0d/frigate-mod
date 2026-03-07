@@ -62,6 +62,11 @@ def get_recordings_storage_usage(request: Request):
 
     for root_path in all_recording_roots:
         root_stats = storage_stats.get(root_path, {})
+        mount_type = root_stats.get("mount_type")
+        mountpoint = root_stats.get("mountpoint")
+        filesystem = (
+            f"{mount_type} • {mountpoint}" if mount_type and mountpoint else mount_type
+        )
         total = root_stats.get("total", 0)
         used = root_stats.get("used", 0)
         free = root_stats.get("free", 0)
@@ -96,6 +101,7 @@ def get_recordings_storage_usage(request: Request):
                 "usage_percent": root_usage_percent,
                 "recordings_size": root_usage["recordings_size"],
                 "is_default": root_usage["is_default"],
+                "filesystem": filesystem,
                 "cameras": root_usage["cameras"],
                 "configured_cameras": root_usage["configured_cameras"],
                 "camera_usages": camera_usages_in_root,

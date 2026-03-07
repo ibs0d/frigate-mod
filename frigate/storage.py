@@ -1,6 +1,7 @@
 """Handle storage retention and usage."""
 
 import logging
+import re
 import shutil
 import threading
 from pathlib import Path
@@ -18,6 +19,8 @@ bandwidth_equation = Recordings.segment_size / (
 )
 
 MAX_CALCULATED_BANDWIDTH = 10000  # 10Gb/hr
+DATE_DIR_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+HOUR_DIR_PATTERN = re.compile(r"^\d{2}$")
 
 
 class StorageMaintainer(threading.Thread):
@@ -173,13 +176,49 @@ class StorageMaintainer(threading.Thread):
         return root_usages
 
     def _get_recordings_root_from_path(self, recording_path: str, camera: str) -> str:
+        normalized_path = recording_path.rstrip("/") or "/"
+
+        configured_roots = sorted(
+            {
+                (path.rstrip("/") or "/")
+                for path in self.config.get_recordings_paths()
+                if path
+            },
+            key=len,
+            reverse=True,
+        )
+
+        for root in configured_roots:
+            if normalized_path == root or normalized_path.startswith(f"{root}/"):
+                return root
+
+        path_parts = Path(normalized_path).parts
+        date_index = next(
+            (
+                index
+                for index, part in enumerate(path_parts)
+                if DATE_DIR_PATTERN.match(part)
+                and index + 1 < len(path_parts)
+                and HOUR_DIR_PATTERN.match(path_parts[index + 1])
+            ),
+            None,
+        )
+
+        if date_index is not None and date_index > 0:
+            root_parts = list(path_parts[:date_index])
+            if root_parts and root_parts[-1] == camera:
+                root_parts = root_parts[:-1]
+
+            if root_parts:
+                return str(Path(*root_parts)).rstrip("/") or "/"
+
         camera_segment = f"/{camera}/"
 
-        if camera_segment in recording_path:
-            return recording_path.split(camera_segment, 1)[0].rstrip("/") or "/"
+        if camera_segment in normalized_path:
+            return normalized_path.split(camera_segment, 1)[0].rstrip("/") or "/"
 
         # Fallback for unexpected path layouts; expected format is root/camera/date/file
-        path = Path(recording_path)
+        path = Path(normalized_path)
         if len(path.parents) >= 3:
             return str(path.parents[2]).rstrip("/") or "/"
 
