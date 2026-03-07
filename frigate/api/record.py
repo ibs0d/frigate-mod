@@ -44,8 +44,9 @@ def get_recordings_storage_usage(request: Request):
     if total_mb == 0:
         return JSONResponse({})
 
-    camera_usages: dict[str, dict] = (
-        request.app.storage_maintainer.calculate_camera_usages()
+    camera_usages: dict[str, dict] = request.app.storage_maintainer.calculate_camera_usages()
+    root_camera_usages: dict[str, dict] = (
+        request.app.storage_maintainer.calculate_camera_usages_by_root()
     )
 
     for camera_name in camera_usages.keys():
@@ -53,6 +54,49 @@ def get_recordings_storage_usage(request: Request):
             camera_usages[camera_name]["usage_percent"] = (
                 camera_usages.get(camera_name, {}).get("usage", 0) / total_mb
             ) * 100
+
+    recording_roots = []
+    for root_path in recording_paths:
+        root_stats = storage_stats.get(root_path, {})
+        total = root_stats.get("total", 0)
+        used = root_stats.get("used", 0)
+        free = root_stats.get("free", 0)
+        root_usage_percent = (used / total) * 100 if total else 0
+
+        root_usage = root_camera_usages.get(
+            root_path,
+            {
+                "path": root_path,
+                "is_default": False,
+                "recordings_size": 0,
+                "cameras": [],
+                "camera_usages": {},
+            },
+        )
+
+        camera_usages_in_root = root_usage.get("camera_usages", {})
+        for camera in camera_usages_in_root.values():
+            camera["usage_percent"] = (
+                (camera.get("usage", 0) / root_usage["recordings_size"]) * 100
+                if root_usage["recordings_size"]
+                else 0
+            )
+
+        recording_roots.append(
+            {
+                "path": root_path,
+                "total": total,
+                "used": used,
+                "free": free,
+                "usage_percent": root_usage_percent,
+                "recordings_size": root_usage["recordings_size"],
+                "is_default": root_usage["is_default"],
+                "cameras": root_usage["cameras"],
+                "camera_usages": camera_usages_in_root,
+            }
+        )
+
+    camera_usages["__recording_roots"] = recording_roots
 
     return JSONResponse(content=camera_usages)
 

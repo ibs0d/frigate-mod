@@ -8,7 +8,7 @@ from pathlib import Path
 from peewee import SQL, fn
 
 from frigate.config import FrigateConfig
-from frigate.const import REPLAY_CAMERA_PREFIX
+from frigate.const import RECORD_DIR, REPLAY_CAMERA_PREFIX
 from frigate.models import Event, Recordings
 from frigate.util.builtin import clear_and_unlink
 
@@ -102,6 +102,49 @@ class StorageMaintainer(threading.Thread):
             }
 
         return usages
+
+    def calculate_camera_usages_by_root(self) -> dict[str, dict]:
+        """Calculate camera storage usage grouped by recordings root."""
+        root_usages: dict[str, dict] = {}
+
+        for camera in self.config.cameras.keys():
+            # Skip replay cameras
+            if camera.startswith(REPLAY_CAMERA_PREFIX):
+                continue
+
+            camera_storage = (
+                Recordings.select(fn.SUM(Recordings.segment_size))
+                .where(Recordings.camera == camera, Recordings.segment_size != 0)
+                .scalar()
+                or 0
+            )
+
+            camera_key = (
+                getattr(self.config.cameras[camera], "friendly_name", None) or camera
+            )
+            root_path = self.config.get_camera_recordings_path(camera)
+            bandwidth = self.camera_storage_stats.get(camera, {}).get("bandwidth", 0)
+
+            if root_path not in root_usages:
+                root_usages[root_path] = {
+                    "path": root_path,
+                    "is_default": root_path == RECORD_DIR,
+                    "recordings_size": 0,
+                    "cameras": [],
+                    "camera_usages": {},
+                }
+
+            root_usages[root_path]["recordings_size"] += camera_storage
+            root_usages[root_path]["cameras"].append(camera_key)
+            root_usages[root_path]["camera_usages"][camera_key] = {
+                "usage": camera_storage,
+                "bandwidth": bandwidth,
+            }
+
+        for root in root_usages.values():
+            root["cameras"] = sorted(root["cameras"])
+
+        return root_usages
 
     def _get_path_bandwidths(self) -> dict[str, float]:
         bandwidth_per_path: dict[str, float] = {}

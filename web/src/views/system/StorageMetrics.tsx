@@ -1,5 +1,9 @@
 import { CombinedStorageGraph } from "@/components/graph/CombinedStorageGraph";
 import { StorageGraph } from "@/components/graph/StorageGraph";
+import {
+  RecordingRootStorage,
+  RecordingsRoots,
+} from "@/components/storage/RecordingsRoots";
 import { FrigateStats } from "@/types/stats";
 import { useMemo } from "react";
 import {
@@ -27,13 +31,19 @@ type CameraStorage = {
   };
 };
 
+type RecordingsStorageResponse = CameraStorage & {
+  __recording_roots?: RecordingRootStorage[];
+};
+
 type StorageMetricsProps = {
   setLastUpdated: (last: number) => void;
 };
 export default function StorageMetrics({
   setLastUpdated,
 }: StorageMetricsProps) {
-  const { data: cameraStorage } = useSWR<CameraStorage>("recordings/storage");
+  const { data: recordingsStorage } = useSWR<RecordingsStorageResponse>(
+    "recordings/storage",
+  );
   const { data: stats } = useSWR<FrigateStats>("stats");
   const { data: config } = useSWR<FrigateConfig>("config", {
     revalidateOnFocus: false,
@@ -41,6 +51,23 @@ export default function StorageMetrics({
   const { t } = useTranslation(["views/system"]);
   const timezone = useTimezone(config);
   const { getLocaleDocUrl } = useDocDomain();
+
+  const cameraStorage = useMemo(() => {
+    if (!recordingsStorage) {
+      return undefined;
+    }
+
+    return Object.fromEntries(
+      Object.entries(recordingsStorage).filter(
+        ([key]) => key !== "__recording_roots",
+      ),
+    ) as CameraStorage;
+  }, [recordingsStorage]);
+
+  const recordingRoots = useMemo(
+    () => recordingsStorage?.__recording_roots ?? [],
+    [recordingsStorage],
+  );
 
   const totalStorage = useMemo(() => {
     if (!cameraStorage || !stats) {
@@ -203,6 +230,10 @@ export default function StorageMetrics({
           totalStorage={totalStorage}
         />
       </div>
+      <div className="mt-4 text-sm font-medium text-muted-foreground">
+        {t("storage.recordings.roots")}
+      </div>
+      <RecordingsRoots roots={recordingRoots} />
     </div>
   );
 }
