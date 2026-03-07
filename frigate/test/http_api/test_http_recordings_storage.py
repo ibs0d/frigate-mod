@@ -173,6 +173,87 @@ class TestHttpRecordingsStorage(BaseTestHttp):
         assert shared_root["cameras"] == ["back_yard", "garage"]
         assert set(shared_root["camera_usages"].keys()) == {"back_yard", "garage"}
 
+
+    def test_recordings_storage_custom_root_only(self):
+        self.minimal_config["cameras"]["front_door"]["path"] = "/video1"
+
+        self.test_stats["service"]["storage"].pop("/media/frigate/recordings", None)
+        self.test_stats["service"]["storage"]["/video1"] = {
+            "free": 2000,
+            "mount_type": "xfs",
+            "total": 5000,
+            "used": 3000,
+        }
+
+        app = self._build_app()
+
+        Recordings.insert(
+            id="front_custom_1",
+            path="/video1/front_door/2024-01-01/00.00.mp4",
+            camera="front_door",
+            start_time=100,
+            end_time=110,
+            duration=10,
+            motion=1,
+            segment_size=100,
+        ).execute()
+
+        with AuthTestClient(app) as client:
+            payload = client.get("/recordings/storage").json()
+
+        roots = {root["path"]: root for root in payload["recording_roots"]}
+        assert set(roots.keys()) == {"/video1"}
+        assert roots["/video1"]["recordings_size"] == 100
+        assert roots["/video1"]["used"] == 3000
+        assert roots["/video1"]["total"] == 5000
+        assert roots["/video1"]["filesystem"] == "xfs"
+
+    def test_recordings_storage_normalizes_date_hour_subdirectories(self):
+        self.minimal_config["cameras"]["front_door"]["path"] = "/video1"
+
+        self.test_stats["service"]["storage"].pop("/media/frigate/recordings", None)
+        self.test_stats["service"]["storage"]["/video1"] = {
+            "free": 2000,
+            "mount_type": "ext4",
+            "total": 5000,
+            "used": 3000,
+        }
+
+        app = self._build_app()
+
+        Recordings.insert_many(
+            [
+                {
+                    "id": "front_custom_1",
+                    "path": "/video1/2026-03-07/08/front_door-1.mp4",
+                    "camera": "front_door",
+                    "start_time": 100,
+                    "end_time": 110,
+                    "duration": 10,
+                    "motion": 1,
+                    "segment_size": 100,
+                },
+                {
+                    "id": "front_custom_2",
+                    "path": "/video1/2026-03-07/09/front_door-2.mp4",
+                    "camera": "front_door",
+                    "start_time": 120,
+                    "end_time": 130,
+                    "duration": 10,
+                    "motion": 1,
+                    "segment_size": 150,
+                },
+            ]
+        ).execute()
+
+        with AuthTestClient(app) as client:
+            payload = client.get("/recordings/storage").json()
+
+        roots = {root["path"]: root for root in payload["recording_roots"]}
+        assert set(roots.keys()) == {"/video1"}
+        assert roots["/video1"]["recordings_size"] == 250
+        assert roots["/video1"]["camera_usages"]["front_door"]["usage"] == 250
+
     def test_recordings_storage_historical_path_migration_splits_usage_by_db_path(self):
         self.minimal_config["cameras"]["front_door"]["path"] = "/mnt/new-root"
 
