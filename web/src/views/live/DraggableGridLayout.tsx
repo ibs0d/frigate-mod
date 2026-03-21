@@ -467,11 +467,7 @@ export default function DraggableGridLayout({
   }, [fitToScreen, fitGridParams, cameras, includeBirdseye, birdseyeConfig]);
 
   const [fitLayoutOverride, setFitLayoutOverride] = useState<Layout | undefined>();
-  const fitDragRef = useRef<{
-    draggedId: string;
-    mouseX: number;
-    mouseY: number;
-  } | null>(null);
+  const fitDragRef = useRef<string | null>(null);
 
   useEffect(() => {
     setFitLayoutOverride(undefined);
@@ -480,34 +476,32 @@ export default function DraggableGridLayout({
   const handleFitDrag = useCallback(
     (
       _layout: Layout,
-      _oldItem: LayoutItem,
-      layoutItem: LayoutItem,
-      _placeholder: LayoutItem,
-      event: MouseEvent,
+      _oldItem: LayoutItem | null,
+      newItem: LayoutItem | null,
     ) => {
-      fitDragRef.current = {
-        draggedId: layoutItem.i,
-        mouseX: event.clientX,
-        mouseY: event.clientY,
-      };
+      if (newItem) {
+        fitDragRef.current = newItem.i;
+      }
     },
     [],
   );
 
   const handleFitDragStop = useCallback(
     (
-      _newLayout: Layout,
-      _oldItem: LayoutItem,
-      _layoutItem: LayoutItem,
-      _placeholder: LayoutItem,
-      event: MouseEvent,
+      _layout: Layout,
+      _oldItem: LayoutItem | null,
+      newItem: LayoutItem | null,
+      _placeholder: LayoutItem | null,
+      event: Event,
     ) => {
-      if (!fitToScreen || !fitGridParams || !fitDragRef.current) return;
+      if (!fitToScreen || !fitGridParams) return;
 
       const w = fitGridParams.gridUnitsPerCam;
       const colsPerRow = fitGridParams.colsPerRow;
-      const draggedId = fitDragRef.current.draggedId;
+      const draggedId = fitDragRef.current ?? newItem?.i;
       fitDragRef.current = null;
+
+      if (!draggedId) return;
 
       const currentOrder = fitLayoutOverride ?? fitLayout ?? [];
       const orderedNames = [...currentOrder]
@@ -522,9 +516,10 @@ export default function DraggableGridLayout({
       ) as HTMLElement | null;
       if (!gridEl) return;
 
+      const mouseEvent = event as MouseEvent;
       const rect = gridEl.getBoundingClientRect();
-      const mouseRelX = event.clientX - rect.left;
-      const mouseRelY = event.clientY - rect.top;
+      const mouseRelX = mouseEvent.clientX - rect.left;
+      const mouseRelY = mouseEvent.clientY - rect.top;
 
       const cellWidthPx = rect.width / colsPerRow;
       const cellHeightPx = cellHeight * w;
