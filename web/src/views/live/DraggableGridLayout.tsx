@@ -1046,7 +1046,7 @@ export default function DraggableGridLayout({
                         useWebGL={useWebGL}
                         cameraRef={cameraRef}
                         className={cn(
-                          "draggable-live-grid-mse-cover size-full bg-black",
+                          "draggable-live-grid-mse-cover size-full bg-black [--frigate-mse-object-fit:fill]",
                           camera.ui?.rotate &&
                             "draggable-live-grid-rotated [--frigate-mse-grid-rotated:1] [--frigate-mse-grid-rotation:rotate(90deg)]",
                           isEditMode &&

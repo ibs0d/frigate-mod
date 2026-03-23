@@ -1,5 +1,5 @@
 import { useApiHost } from "@/api";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import ActivityIndicator from "../indicators/activity-indicator";
 import { useResizeObserver } from "@/hooks/resize-observer";
@@ -46,11 +46,25 @@ export default function CameraImage({
   }, [cameraConfig, containerHeight]);
 
   const [isPortraitImage, setIsPortraitImage] = useState(false);
+  const [isObjectFitFill, setIsObjectFitFill] = useState(false);
 
   useEffect(() => {
     setImageLoaded(false);
     setIsPortraitImage(false);
   }, [camera]);
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    const objectFit = window
+      .getComputedStyle(containerRef.current)
+      .getPropertyValue("--frigate-mse-object-fit")
+      .trim();
+
+    setIsObjectFitFill(objectFit === "fill");
+  }, [className]);
 
   useEffect(() => {
     if (!config || !imgRef.current) {
@@ -87,13 +101,26 @@ export default function CameraImage({
         <img
           ref={imgRef}
           className={cn(
-            "object-contain",
-            imageLoaded
-              ? isPortraitImage
-                ? "h-full w-auto"
-                : "h-auto w-full"
-              : "invisible",
+            imageLoaded ? "" : "invisible",
+            isObjectFitFill
+              ? "size-full"
+              : cn(
+                  "object-contain",
+                  imageLoaded
+                    ? isPortraitImage
+                      ? "h-full w-auto"
+                      : "h-auto w-full"
+                    : "",
+                ),
           )}
+          style={
+            isObjectFitFill
+              ? ({
+                  objectFit:
+                    "var(--frigate-mse-object-fit, contain)" as CSSProperties["objectFit"],
+                } as CSSProperties)
+              : undefined
+          }
           onLoad={handleImageLoad}
           loading="lazy"
         />
