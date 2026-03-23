@@ -679,6 +679,7 @@ export function CameraGroupEdit({
 
   const allowedCameras = useAllowedCameras();
   const hasFullCameraAccess = useHasFullCameraAccess();
+  const isAdmin = useIsAdmin(); 
 
   const [openCamera, setOpenCamera] = useState<string | null>();
 
