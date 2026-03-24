@@ -1,13 +1,14 @@
 """Media sync job management with background execution."""
 
 import logging
+import os
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
 from frigate.comms.inter_process import InterProcessRequestor
-from frigate.const import UPDATE_JOB_STATE
+from frigate.const import CONFIG_DIR, UPDATE_JOB_STATE
 from frigate.jobs.job import Job
 from frigate.jobs.manager import (
     get_current_job,
@@ -16,7 +17,7 @@ from frigate.jobs.manager import (
     set_current_job,
 )
 from frigate.types import JobStatusTypesEnum
-from frigate.util.media import sync_all_media
+from frigate.util.media import sync_all_media, write_orphan_report
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class MediaSyncJob(Job):
     dry_run: bool = False
     media_types: list[str] = field(default_factory=lambda: ["all"])
     force: bool = False
+    verbose: bool = False
     recordings_roots: list[str] = field(default_factory=list)
 
 
@@ -62,6 +64,20 @@ class MediaSyncRunner(threading.Thread):
                 force=self.job.force,
                 recordings_roots=self.job.recordings_roots,
             )
+
+            if self.job.verbose:
+                report_dir = os.path.join(CONFIG_DIR, "media_sync")
+                os.makedirs(report_dir, exist_ok=True)
+                report_path = os.path.join(report_dir, f"{self.job.id}.txt")
+                write_orphan_report(
+                    results,
+                    report_path,
+                    job_id=self.job.id,
+                    dry_run=self.job.dry_run,
+                )
+                logger.info(
+                    "Media sync verbose orphan report written to %s", report_path
+                )
 
             # Store results and mark as complete
             self.job.results = results.to_dict()
@@ -97,6 +113,7 @@ def start_media_sync_job(
     dry_run: bool = False,
     media_types: Optional[list[str]] = None,
     force: bool = False,
+    verbose: bool = False,
     recordings_roots: Optional[list[str]] = None,
 ) -> Optional[str]:
     """Start a new media sync job if none is currently running.
@@ -116,6 +133,7 @@ def start_media_sync_job(
         dry_run=dry_run,
         media_types=media_types or ["all"],
         force=force,
+        verbose=verbose,
         recordings_roots=recordings_roots or [],
     )
 
