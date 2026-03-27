@@ -265,7 +265,7 @@ class RecordingMaintainer(threading.Thread):
 
             # get all reviews with the end time after the start of the oldest cache file
             # or with end_time None
-            reviews: ReviewSegment = (
+            reviews = (
                 ReviewSegment.select(
                     ReviewSegment.start_time,
                     ReviewSegment.end_time,
@@ -300,7 +300,9 @@ class RecordingMaintainer(threading.Thread):
                 RecordingsDataTypeEnum.saved.value,
             )
 
-        recordings_to_insert: list[Optional[Recordings]] = await asyncio.gather(*tasks)
+        recordings_to_insert: list[Optional[dict[str, Any]]] = await asyncio.gather(
+            *tasks
+        )
 
         # fire and forget recordings entries
         self.requestor.send_data(
@@ -313,8 +315,8 @@ class RecordingMaintainer(threading.Thread):
         self.end_time_cache.pop(cache_path, None)
 
     async def validate_and_move_segment(
-        self, camera: str, reviews: list[ReviewSegment], recording: dict[str, Any]
-    ) -> Optional[Recordings]:
+        self, camera: str, reviews: Any, recording: dict[str, Any]
+    ) -> Optional[dict[str, Any]]:
         cache_path: str = recording["cache_path"]
         start_time: datetime.datetime = recording["start_time"]
 
@@ -454,6 +456,7 @@ class RecordingMaintainer(threading.Thread):
             ).astimezone(datetime.timezone.utc)
             if end_time < retain_cutoff:
                 self.drop_segment(cache_path)
+        return None
 
     def _compute_motion_heatmap(
         self, camera: str, motion_boxes: list[tuple[int, int, int, int]]
@@ -480,7 +483,7 @@ class RecordingMaintainer(threading.Thread):
         frame_width = camera_config.detect.width
         frame_height = camera_config.detect.height
 
-        if frame_width <= 0 or frame_height <= 0:
+        if not frame_width or frame_width <= 0 or not frame_height or frame_height <= 0:
             return None
 
         GRID_SIZE = 16
@@ -574,13 +577,13 @@ class RecordingMaintainer(threading.Thread):
         duration: float,
         cache_path: str,
         store_mode: RetainModeEnum,
-    ) -> Optional[Recordings]:
+    ) -> Optional[dict[str, Any]]:
         segment_info = self.segment_stats(camera, start_time, end_time)
 
         # check if the segment shouldn't be stored
         if segment_info.should_discard_segment(store_mode):
             self.drop_segment(cache_path)
-            return
+            return None
 
         # directory will be in utc due to start_time being in utc
         directory = os.path.join(
@@ -619,7 +622,8 @@ class RecordingMaintainer(threading.Thread):
 
                 if p.returncode != 0:
                     logger.error(f"Unable to convert {cache_path} to {file_path}")
-                    logger.error((await p.stderr.read()).decode("ascii"))
+                    if p.stderr:
+                        logger.error((await p.stderr.read()).decode("ascii"))
                     Path(file_path).unlink(missing_ok=True)
                     return None
                 else:
@@ -684,11 +688,16 @@ class RecordingMaintainer(threading.Thread):
             stale_frame_count_threshold = 10
             # empty the object recordings info queue
             while True:
-                (topic, data) = self.detection_subscriber.check_for_update(
+                result = self.detection_subscriber.check_for_update(
                     timeout=FAST_QUEUE_TIMEOUT
                 )
 
-                if not topic:
+                if not result:
+                    break
+
+                topic, data = result
+
+                if not topic or not data:
                     break
 
                 if topic == DetectionTypeEnum.video.value:
