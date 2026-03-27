@@ -256,7 +256,7 @@ class StorageMaintainer(threading.Thread):
             .iterator()
         )
 
-         retained_events = (
+        retained_events = (
             Event.select(
                 Event.start_time,
                 Event.end_time,
