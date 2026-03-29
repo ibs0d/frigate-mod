@@ -90,17 +90,21 @@ export default function StorageMetrics({
     }
 
     const totalStorage = {
-      used: stats.service.storage["/media/frigate/recordings"]["used"],
+      used: overviewRecordingStorage.used,
       camera: 0,
-      total: stats.service.storage["/media/frigate/recordings"]["total"],
+      total: overviewRecordingStorage.total,
     };
+
+    if (totalStorage.total === 0) {
+      return undefined;
+    }
 
     Object.values(cameraStorage).forEach(
       (cam) => (totalStorage.camera += cam.usage),
     );
     setLastUpdated(Date.now() / 1000);
     return totalStorage;
-  }, [cameraStorage, stats, setLastUpdated]);
+  }, [cameraStorage, stats, overviewRecordingStorage, setLastUpdated]);
 
   // recordings summary
 
