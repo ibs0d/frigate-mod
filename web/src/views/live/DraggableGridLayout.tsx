@@ -403,11 +403,9 @@ export default function DraggableGridLayout({
     let bestCols = 1;
     let bestScore = 0;
 
-    for (let cols = 1; cols <= Math.min(totalCameras, 12); cols++) {
-      const w = Math.floor(12 / cols);
-      if (w < 1) continue;
+    for (let cols = 1; cols <= totalCameras; cols++) {
       const rows = Math.ceil(totalCameras / cols);
-      const camWidth = (w / 12) * availableWidth;
+      const camWidth = availableWidth / cols;
       const camHeight = camWidth / aspectRatio;
       const totalHeight = camHeight * rows;
 
@@ -422,11 +420,9 @@ export default function DraggableGridLayout({
 
     if (bestScore === 0) {
       let minOvershoot = Infinity;
-      for (let cols = 1; cols <= Math.min(totalCameras, 12); cols++) {
-        const w = Math.floor(12 / cols);
-        if (w < 1) continue;
+      for (let cols = 1; cols <= totalCameras; cols++) {
         const rows = Math.ceil(totalCameras / cols);
-        const camWidth = (w / 12) * availableWidth;
+        const camWidth = availableWidth / cols;
         const camHeight = camWidth / aspectRatio;
         const totalHeight = camHeight * rows;
         if (totalHeight - viewportHeight < minOvershoot) {
@@ -436,11 +432,10 @@ export default function DraggableGridLayout({
       }
     }
 
-    const gridUnitsPerCam = Math.floor(12 / bestCols);
     const rows = Math.ceil(totalCameras / bestCols);
-    const fittedCellH = viewportHeight / (rows * gridUnitsPerCam);
+    const fittedCellH = viewportHeight / rows;
 
-    return { gridUnitsPerCam, colsPerRow: bestCols, cellHeight: fittedCellH };
+    return { gridCols: bestCols, colsPerRow: bestCols, cellHeight: fittedCellH };
   }, [fitToScreen, availableWidth, viewportHeight, totalCameras]);
 
   const cellHeight = useMemo(() => {
@@ -459,8 +454,6 @@ export default function DraggableGridLayout({
         ? ["birdseye", ...cameras.map((camera) => camera?.name || "")]
         : cameras.map((camera) => camera?.name || "");
 
-    const w = fitGridParams.gridUnitsPerCam;
-    const h = w;
     const colsPerRow = fitGridParams.colsPerRow;
 
     // Применить сохранённый порядок если он валиден
@@ -479,10 +472,10 @@ export default function DraggableGridLayout({
 
     return orderedNames.map((name, index) => ({
       i: name,
-      x: (index % colsPerRow) * w,
-      y: Math.floor(index / colsPerRow) * h,
-      w,
-      h,
+      x: index % colsPerRow,
+      y: Math.floor(index / colsPerRow),
+      w: 1,
+      h: 1,
     }));
   }, [fitToScreen, fitGridParams, cameras, includeBirdseye, birdseyeConfig, fitCameraOrder]);
 
@@ -507,7 +500,6 @@ export default function DraggableGridLayout({
     ) => {
       if (!fitToScreen || !fitGridParams || !newItem) return;
 
-      const w = fitGridParams.gridUnitsPerCam;
       const colsPerRow = fitGridParams.colsPerRow;
       const draggedId = newItem.i;
 
@@ -522,9 +514,9 @@ export default function DraggableGridLayout({
 
       const targetCol = Math.max(
         0,
-        Math.min(Math.round(newItem.x / w), colsPerRow - 1),
+        Math.min(Math.round(newItem.x), colsPerRow - 1),
       );
-      const targetRow = Math.max(0, Math.round(newItem.y / w));
+      const targetRow = Math.max(0, Math.round(newItem.y));
       const totalRows = Math.ceil(orderedNames.length / colsPerRow);
       const clampedRow = Math.min(targetRow, totalRows - 1);
       const targetIndex = Math.min(
@@ -921,7 +913,10 @@ export default function DraggableGridLayout({
             }}
             rowHeight={cellHeight}
             breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }}
+            cols={fitToScreen && fitGridParams
+              ? { lg: fitGridParams.gridCols, md: fitGridParams.gridCols, sm: fitGridParams.gridCols, xs: fitGridParams.gridCols, xxs: fitGridParams.gridCols }
+              : { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }
+            }
             margin={[0, 0]}
             containerPadding={[0, 0]}
             resizeConfig={{
