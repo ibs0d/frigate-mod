@@ -439,12 +439,9 @@ export default function DraggableGridLayout({
   }, [fitToScreen, availableWidth, viewportHeight, totalCameras]);
 
   const cellHeight = useMemo(() => {
-    if (fitGridParams) {
-      return fitGridParams.cellHeight;
-    }
     const aspectRatio = 16 / 9;
     return availableWidth / 12 / aspectRatio;
-  }, [availableWidth, fitGridParams]);
+  }, [availableWidth]);
 
   const fitLayout = useMemo(() => {
     if (!fitToScreen || !fitGridParams) return null;
@@ -545,11 +542,8 @@ export default function DraggableGridLayout({
   );
 
   const activeGridLayout = useMemo(() => {
-    if (fitToScreen) {
-      return fitLayout ?? currentGridLayout;
-    }
-    return currentGridLayout;
-  }, [fitToScreen, fitLayout, currentGridLayout]);
+    return fitLayout ?? [];
+  }, [fitLayout]);
 
   const handleResize = (
     _layout: Layout,
@@ -869,6 +863,190 @@ export default function DraggableGridLayout({
     onSaveMuting(true);
   };
 
+  const gridChildren = (
+    <>
+      {includeBirdseye && birdseyeConfig?.enabled && (
+        <BirdseyeLivePlayerGridItem
+          key="birdseye"
+          className={cn(
+            isEditMode &&
+              showCircles &&
+              "outline outline-2 outline-muted-foreground hover:cursor-grab hover:outline-4 active:cursor-grabbing",
+          )}
+          birdseyeConfig={birdseyeConfig}
+          liveMode={birdseyeConfig.restream ? "mse" : "jsmpeg"}
+          onClick={() => onSelectCamera("birdseye")}
+        >
+          {isEditMode && showCircles && <CornerCircles />}
+        </BirdseyeLivePlayerGridItem>
+      )}
+      {cameras.map((camera) => {
+        const availableStreams = camera.live.streams || {};
+        const firstStreamEntry = Object.values(availableStreams)[0] || "";
+
+        const streamNameFromSettings =
+          currentGroupStreamingSettings?.[camera.name]?.streamName || "";
+        const streamExists =
+          streamNameFromSettings &&
+          Object.values(availableStreams).includes(
+            streamNameFromSettings,
+          );
+
+        const streamName = streamExists
+          ? streamNameFromSettings
+          : firstStreamEntry;
+        const streamType =
+          currentGroupStreamingSettings?.[camera.name]?.streamType;
+        const autoLive =
+          streamType !== undefined
+            ? streamType !== "no-streaming"
+            : undefined;
+        const showStillWithoutActivity =
+          currentGroupStreamingSettings?.[camera.name]?.streamType !==
+          "continuous";
+        const useWebGL =
+          currentGroupStreamingSettings?.[camera.name]
+            ?.compatibilityMode || false;
+        const cameraZoomTransform =
+          cameraZoomStates[camera.name] ?? getDefaultZoomTransform();
+
+        return (
+          <GridLiveContextMenu
+            className="size-full"
+            key={camera.name}
+            camera={camera.name}
+            streamName={streamName}
+            cameraGroup={cameraGroup}
+            preferredLiveMode={preferredLiveModes[camera.name] ?? "mse"}
+            isRestreamed={isRestreamedStates[camera.name]}
+            supportsAudio={
+              supportsAudioOutputStates[streamName]?.supportsAudio ??
+              false
+            }
+            audioState={audioStates[camera.name]}
+            toggleAudio={() => toggleAudio(camera.name)}
+            statsState={statsStates[camera.name] ?? true}
+            toggleStats={() => toggleStats(camera.name)}
+            volumeState={volumeStates[camera.name]}
+            setVolumeState={(value) =>
+              setVolumeStates((prev) => ({
+                ...prev,
+                [camera.name]: value,
+              }))
+            }
+            muteAll={muteAll}
+            unmuteAll={unmuteAll}
+            resetPreferredLiveMode={() =>
+              resetPreferredLiveMode(camera.name)
+            }
+            config={config}
+            streamMetadata={streamMetadata}
+          >
+            <div
+              className="relative size-full overflow-hidden"
+              ref={(node) => {
+                cameraZoomViewportRefs.current[camera.name] = node;
+
+                if (!node) {
+                  detachCardZoomWheelListener(camera.name);
+                  return;
+                }
+
+                attachCardZoomWheelListener(camera.name, node);
+
+                hydrateCameraZoomFromStorage(camera.name);
+              }}
+            >
+              <div
+                className="size-full"
+                style={{
+                  transform: `translate3d(${cameraZoomTransform.positionX}px, ${cameraZoomTransform.positionY}px, 0) scale(${cameraZoomTransform.scale})`,
+                  transformOrigin: "top left",
+                }}
+              >
+                <LivePlayer
+                  key={camera.name}
+                  streamName={streamName}
+                  autoLive={autoLive ?? globalAutoLive}
+                  showStillWithoutActivity={
+                    showStillWithoutActivity ?? true
+                  }
+                  alwaysShowCameraName={displayCameraNames}
+                  useWebGL={useWebGL}
+                  cameraRef={cameraRef}
+                  className={cn(
+                    "draggable-live-grid-mse-cover size-full bg-black [--frigate-mse-object-fit:fill]",
+                    camera.ui?.rotate &&
+                      "draggable-live-grid-rotated [--frigate-mse-grid-rotated:1] [--frigate-mse-grid-rotation:rotate(90deg)]",
+                    isEditMode &&
+                      showCircles &&
+                      "outline-2 outline-muted-foreground hover:cursor-grab hover:outline-4 active:cursor-grabbing",
+                  )}
+                  windowVisible={
+                    windowVisible && visibleCameras.includes(camera.name)
+                  }
+                  cameraConfig={camera}
+                  preferredLiveMode={
+                    preferredLiveModes[camera.name] ?? "mse"
+                  }
+                  playInBackground={false}
+                  showStats={false}
+                  onStatsUpdate={(stats) =>
+                    setCameraStatsData((prev) => ({
+                      ...prev,
+                      [camera.name]: stats,
+                    }))
+                  }
+                  onLoadingChange={(loading) =>
+                    setCameraLoadingStates((prev) => ({
+                      ...prev,
+                      [camera.name]: loading,
+                    }))
+                  }
+                  showMotionDot={false}
+                  onClick={() => {
+                    !isEditMode && onSelectCamera(camera.name);
+                  }}
+                  onError={(e) => {
+                    setPreferredLiveModes((prevModes) => {
+                      const newModes = { ...prevModes };
+                      if (e === "mse-decode") {
+                        delete newModes[camera.name];
+                      }
+                      return newModes;
+                    });
+                  }}
+                  onResetLiveMode={() =>
+                    resetPreferredLiveMode(camera.name)
+                  }
+                  playAudio={audioStates[camera.name]}
+                  volume={volumeStates[camera.name]}
+                />
+              </div>
+              {cameraLoadingStates[camera.name] && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ActivityIndicator />
+                </div>
+              )}
+              {statsStates[camera.name] &&
+                cameraStatsData[camera.name] && (
+                  <PlayerStats
+                    stats={cameraStatsData[camera.name]}
+                    minimal={true}
+                  />
+                )}
+              <CameraMotionDot
+                camera={camera}
+                autoLive={autoLive ?? globalAutoLive}
+              />
+            </div>
+            {isEditMode && showCircles && <CornerCircles />}
+          </GridLiveContextMenu>
+        );
+      })}
+    </>
+  );
+
   return (
     <>
       <Toaster position="top-center" closeButton={true} />
@@ -900,217 +1078,71 @@ export default function DraggableGridLayout({
             currentGroups={groups}
             activeGroup={group}
           />
-          {containerWidth > 0 && <Responsive
-            className="grid-layout"
-            width={availableWidth}
-            compactor={fitToScreen ? noCompactor : undefined}
-            layouts={{
-              lg: activeGridLayout,
-              md: activeGridLayout,
-              sm: activeGridLayout,
-              xs: activeGridLayout,
-              xxs: activeGridLayout,
-            }}
-            rowHeight={cellHeight}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={fitToScreen && fitGridParams
-              ? { lg: fitGridParams.gridCols, md: fitGridParams.gridCols, sm: fitGridParams.gridCols, xs: fitGridParams.gridCols, xxs: fitGridParams.gridCols }
-              : { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }
-            }
-            margin={[0, 0]}
-            containerPadding={[0, 0]}
-            resizeConfig={{
-              enabled: isEditMode && !fitToScreen,
-              handles: isEditMode && !fitToScreen ? ["sw", "nw", "se", "ne"] : [],
-            }}
-            dragConfig={{
-              enabled: isEditMode,
-            }}
-            onDragStop={fitToScreen ? handleFitDragStop : handleLayoutChange}
-            onResize={handleResize}
-            onResizeStart={() => setShowCircles(false)}
-            onResizeStop={handleLayoutChange}
-          >
-            {includeBirdseye && birdseyeConfig?.enabled && (
-              <BirdseyeLivePlayerGridItem
-                key="birdseye"
-                className={cn(
-                  isEditMode &&
-                    showCircles &&
-                    "outline outline-2 outline-muted-foreground hover:cursor-grab hover:outline-4 active:cursor-grabbing",
-                )}
-                birdseyeConfig={birdseyeConfig}
-                liveMode={birdseyeConfig.restream ? "mse" : "jsmpeg"}
-                onClick={() => onSelectCamera("birdseye")}
-              >
-                {isEditMode && showCircles && <CornerCircles />}
-              </BirdseyeLivePlayerGridItem>
-            )}
-            {cameras.map((camera) => {
-              const availableStreams = camera.live.streams || {};
-              const firstStreamEntry = Object.values(availableStreams)[0] || "";
-
-              const streamNameFromSettings =
-                currentGroupStreamingSettings?.[camera.name]?.streamName || "";
-              const streamExists =
-                streamNameFromSettings &&
-                Object.values(availableStreams).includes(
-                  streamNameFromSettings,
-                );
-
-              const streamName = streamExists
-                ? streamNameFromSettings
-                : firstStreamEntry;
-              const streamType =
-                currentGroupStreamingSettings?.[camera.name]?.streamType;
-              const autoLive =
-                streamType !== undefined
-                  ? streamType !== "no-streaming"
-                  : undefined;
-              const showStillWithoutActivity =
-                currentGroupStreamingSettings?.[camera.name]?.streamType !==
-                "continuous";
-              const useWebGL =
-                currentGroupStreamingSettings?.[camera.name]
-                  ?.compatibilityMode || false;
-              const cameraZoomTransform =
-                cameraZoomStates[camera.name] ?? getDefaultZoomTransform();
-
-              return (
-                <GridLiveContextMenu
-                  className="size-full"
-                  key={camera.name}
-                  camera={camera.name}
-                  streamName={streamName}
-                  cameraGroup={cameraGroup}
-                  preferredLiveMode={preferredLiveModes[camera.name] ?? "mse"}
-                  isRestreamed={isRestreamedStates[camera.name]}
-                  supportsAudio={
-                    supportsAudioOutputStates[streamName]?.supportsAudio ??
-                    false
-                  }
-                  audioState={audioStates[camera.name]}
-                  toggleAudio={() => toggleAudio(camera.name)}
-                  statsState={statsStates[camera.name] ?? true}
-                  toggleStats={() => toggleStats(camera.name)}
-                  volumeState={volumeStates[camera.name]}
-                  setVolumeState={(value) =>
-                    setVolumeStates((prev) => ({
-                      ...prev,
-                      [camera.name]: value,
-                    }))
-                  }
-                  muteAll={muteAll}
-                  unmuteAll={unmuteAll}
-                  resetPreferredLiveMode={() =>
-                    resetPreferredLiveMode(camera.name)
-                  }
-                  config={config}
-                  streamMetadata={streamMetadata}
-                >
-                  <div
-                    className="relative size-full overflow-hidden"
-                    ref={(node) => {
-                      cameraZoomViewportRefs.current[camera.name] = node;
-
-                      if (!node) {
-                        detachCardZoomWheelListener(camera.name);
-                        return;
-                      }
-
-                      attachCardZoomWheelListener(camera.name, node);
-
-                      hydrateCameraZoomFromStorage(camera.name);
-                    }}
-                  >
-                    <div
-                      className="size-full"
-                      style={{
-                        transform: `translate3d(${cameraZoomTransform.positionX}px, ${cameraZoomTransform.positionY}px, 0) scale(${cameraZoomTransform.scale})`,
-                        transformOrigin: "top left",
-                      }}
-                    >
-                      <LivePlayer
-                        key={camera.name}
-                        streamName={streamName}
-                        autoLive={autoLive ?? globalAutoLive}
-                        showStillWithoutActivity={
-                          showStillWithoutActivity ?? true
-                        }
-                        alwaysShowCameraName={displayCameraNames}
-                        useWebGL={useWebGL}
-                        cameraRef={cameraRef}
-                        className={cn(
-                          "draggable-live-grid-mse-cover size-full bg-black [--frigate-mse-object-fit:fill]",
-                          camera.ui?.rotate &&
-                            "draggable-live-grid-rotated [--frigate-mse-grid-rotated:1] [--frigate-mse-grid-rotation:rotate(90deg)]",
-                          isEditMode &&
-                            showCircles &&
-                            "outline-2 outline-muted-foreground hover:cursor-grab hover:outline-4 active:cursor-grabbing",
-                        )}
-                        windowVisible={
-                          windowVisible && visibleCameras.includes(camera.name)
-                        }
-                        cameraConfig={camera}
-                        preferredLiveMode={
-                          preferredLiveModes[camera.name] ?? "mse"
-                        }
-                        playInBackground={false}
-                        showStats={false}
-                        onStatsUpdate={(stats) =>
-                          setCameraStatsData((prev) => ({
-                            ...prev,
-                            [camera.name]: stats,
-                          }))
-                        }
-                        onLoadingChange={(loading) =>
-                          setCameraLoadingStates((prev) => ({
-                            ...prev,
-                            [camera.name]: loading,
-                          }))
-                        }
-                        showMotionDot={false}
-                        onClick={() => {
-                          !isEditMode && onSelectCamera(camera.name);
-                        }}
-                        onError={(e) => {
-                          setPreferredLiveModes((prevModes) => {
-                            const newModes = { ...prevModes };
-                            if (e === "mse-decode") {
-                              delete newModes[camera.name];
-                            }
-                            return newModes;
-                          });
-                        }}
-                        onResetLiveMode={() =>
-                          resetPreferredLiveMode(camera.name)
-                        }
-                        playAudio={audioStates[camera.name]}
-                        volume={volumeStates[camera.name]}
-                      />
-                    </div>
-                    {cameraLoadingStates[camera.name] && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <ActivityIndicator />
-                      </div>
-                    )}
-                    {statsStates[camera.name] &&
-                      cameraStatsData[camera.name] && (
-                        <PlayerStats
-                          stats={cameraStatsData[camera.name]}
-                          minimal={true}
-                        />
-                      )}
-                    <CameraMotionDot
-                      camera={camera}
-                      autoLive={autoLive ?? globalAutoLive}
-                    />
-                  </div>
-                  {isEditMode && showCircles && <CornerCircles />}
-                </GridLiveContextMenu>
-              );
-            })}
-          </Responsive>}
+          {containerWidth > 0 && fitToScreen && fitGridParams && (
+            <Responsive
+              key="fit-grid"
+              className="grid-layout"
+              width={availableWidth}
+              compactor={noCompactor}
+              layouts={{
+                lg: activeGridLayout,
+                md: activeGridLayout,
+                sm: activeGridLayout,
+                xs: activeGridLayout,
+                xxs: activeGridLayout,
+              }}
+              rowHeight={fitGridParams.cellHeight}
+              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+              cols={{ lg: fitGridParams.gridCols, md: fitGridParams.gridCols, sm: fitGridParams.gridCols, xs: fitGridParams.gridCols, xxs: fitGridParams.gridCols }}
+              margin={[0, 0]}
+              containerPadding={[0, 0]}
+              resizeConfig={{
+                enabled: false,
+                handles: [],
+              }}
+              dragConfig={{
+                enabled: isEditMode,
+              }}
+              onDragStop={handleFitDragStop}
+              onResize={handleResize}
+              onResizeStart={() => setShowCircles(false)}
+              onResizeStop={handleLayoutChange}
+            >
+              {gridChildren}
+            </Responsive>
+          )}
+          {containerWidth > 0 && !fitToScreen && (
+            <Responsive
+              key="standard-grid"
+              className="grid-layout"
+              width={availableWidth}
+              layouts={{
+                lg: currentGridLayout,
+                md: currentGridLayout,
+                sm: currentGridLayout,
+                xs: currentGridLayout,
+                xxs: currentGridLayout,
+              }}
+              rowHeight={cellHeight}
+              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+              cols={{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }}
+              margin={[0, 0]}
+              containerPadding={[0, 0]}
+              resizeConfig={{
+                enabled: isEditMode,
+                handles: isEditMode ? ["sw", "nw", "se", "ne"] : [],
+              }}
+              dragConfig={{
+                enabled: isEditMode,
+              }}
+              onDragStop={handleLayoutChange}
+              onResize={handleResize}
+              onResizeStart={() => setShowCircles(false)}
+              onResizeStop={handleLayoutChange}
+            >
+              {gridChildren}
+            </Responsive>
+          )}
           {isDesktop && (
             <div
               className={cn(
