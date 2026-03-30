@@ -863,24 +863,25 @@ export default function DraggableGridLayout({
     onSaveMuting(true);
   };
 
-  const gridChildren = (
-    <>
-      {includeBirdseye && birdseyeConfig?.enabled && (
-        <BirdseyeLivePlayerGridItem
-          key="birdseye"
-          className={cn(
-            isEditMode &&
-              showCircles &&
-              "outline outline-2 outline-muted-foreground hover:cursor-grab hover:outline-4 active:cursor-grabbing",
-          )}
-          birdseyeConfig={birdseyeConfig}
-          liveMode={birdseyeConfig.restream ? "mse" : "jsmpeg"}
-          onClick={() => onSelectCamera("birdseye")}
-        >
-          {isEditMode && showCircles && <CornerCircles />}
-        </BirdseyeLivePlayerGridItem>
-      )}
-      {cameras.map((camera) => {
+  const gridChildren = [
+    ...(includeBirdseye && birdseyeConfig?.enabled
+      ? [
+          <BirdseyeLivePlayerGridItem
+            key="birdseye"
+            className={cn(
+              isEditMode &&
+                showCircles &&
+                "outline outline-2 outline-muted-foreground hover:cursor-grab hover:outline-4 active:cursor-grabbing",
+            )}
+            birdseyeConfig={birdseyeConfig}
+            liveMode={birdseyeConfig.restream ? "mse" : "jsmpeg"}
+            onClick={() => onSelectCamera("birdseye")}
+          >
+            {isEditMode && showCircles && <CornerCircles />}
+          </BirdseyeLivePlayerGridItem>,
+        ]
+      : []),
+    ...cameras.map((camera) => {
         const availableStreams = camera.live.streams || {};
         const firstStreamEntry = Object.values(availableStreams)[0] || "";
 
@@ -1043,9 +1044,8 @@ export default function DraggableGridLayout({
             {isEditMode && showCircles && <CornerCircles />}
           </GridLiveContextMenu>
         );
-      })}
-    </>
-  );
+      }),
+  ];
 
   return (
     <>
