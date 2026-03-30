@@ -5,7 +5,7 @@ import {
   RecordingsRoots,
 } from "@/components/storage/RecordingsRoots";
 import { FrigateStats } from "@/types/stats";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Popover,
   PopoverContent,
@@ -102,9 +102,14 @@ export default function StorageMetrics({
     Object.values(cameraStorage).forEach(
       (cam) => (totalStorage.camera += cam.usage),
     );
-    setLastUpdated(Date.now() / 1000);
     return totalStorage;
-  }, [cameraStorage, stats, overviewRecordingStorage, setLastUpdated]);
+  }, [cameraStorage, stats, overviewRecordingStorage]);
+
+  useEffect(() => {
+    if (totalStorage) {
+      setLastUpdated(Math.floor(Date.now() / 1000));
+    }
+  }, [totalStorage, setLastUpdated]);
 
   // recordings summary
 
