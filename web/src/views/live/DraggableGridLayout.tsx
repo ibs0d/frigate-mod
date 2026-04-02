@@ -1080,7 +1080,7 @@ export default function DraggableGridLayout({
           />
           {containerWidth > 0 && fitToScreen && fitGridParams && (
             <Responsive
-              key="fit-grid"
+              key={`fit-grid-${fitGridParams.gridCols}`}
               className="grid-layout"
               width={availableWidth}
               compactor={noCompactor}
