@@ -212,25 +212,16 @@ function MSEPlayer({
       wsAbortRef.current?.abort();
       wsAbortRef.current = null;
 
-      // For real unmount — close everything aggressively (including CONNECTING).
-      // For visibility/playback toggles — only close OPEN or CLOSING sockets,
-      // giving a CONNECTING socket a chance to finish its handshake and avoid
-      // "WebSocket is closed before the connection is established" errors.
-      if (!isMountedRef.current) {
-        if (currentReadyState !== WebSocket.CLOSED) {
-          try {
-            ws.close();
-          } catch {
-            // Ignore close errors
-          }
-        }
-      } else {
-        if (currentReadyState === WebSocket.OPEN || currentReadyState === WebSocket.CLOSING) {
-          try {
-            ws.close();
-          } catch {
-            // Ignore close errors
-          }
+      if (currentReadyState === WebSocket.CONNECTING) {
+        // Don't close mid-handshake — browser would log
+        // "WebSocket is closed before the connection is established".
+        // Let it finish, then close immediately — no zombie socket.
+        ws.addEventListener("open", () => { try { ws.close(); } catch {} }, { once: true });
+      } else if (currentReadyState !== WebSocket.CLOSED) {
+        try {
+          ws.close();
+        } catch {
+          // Ignore close errors
         }
       }
     }
@@ -396,6 +387,8 @@ function MSEPlayer({
             },
             (fallbackTimeout ?? 3) * 1000,
           ).catch(() => {
+            // Don't report errors for intentional disconnects (visibility change, navigation)
+            if (intentionalDisconnectRef.current) return;
             if (wsRef.current) {
               onDisconnect();
             }
@@ -426,15 +419,13 @@ function MSEPlayer({
             },
             (fallbackTimeout ?? 3) * 1000,
           ).catch(() => {
-            // Only report errors if we actually had a connection that failed
-            // If WS wasn't connected, this is a stale sourceopen event from a previous connection
-            if (wsRef.current) {
-              onDisconnect();
-              if (isIOS || isSafari) {
-                handleError("mse-decode", "Safari cannot open MediaSource.");
-              } else {
-                handleError("startup", "Error opening MediaSource.");
-              }
+            // Don't report errors for intentional disconnects or stale sourceopen events
+            if (intentionalDisconnectRef.current || !wsRef.current) return;
+            onDisconnect();
+            if (isIOS || isSafari) {
+              handleError("mse-decode", "Safari cannot open MediaSource.");
+            } else {
+              handleError("startup", "Error opening MediaSource.");
             }
           });
         },
@@ -640,6 +631,7 @@ function MSEPlayer({
           if (
             document.visibilityState === "visible" &&
             wsRef.current != null &&
+            !intentionalDisconnectRef.current &&
             videoRef.current
           ) {
             onDisconnect();
