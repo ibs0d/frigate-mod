@@ -212,13 +212,25 @@ function MSEPlayer({
       wsAbortRef.current?.abort();
       wsAbortRef.current = null;
 
-      // Close the socket in any non-CLOSED state (including CONNECTING)
-      // WebSocket spec allows close() on CONNECTING — browser will abort the handshake
-      if (currentReadyState !== WebSocket.CLOSED) {
-        try {
-          ws.close();
-        } catch {
-          // Ignore close errors
+      // For real unmount — close everything aggressively (including CONNECTING).
+      // For visibility/playback toggles — only close OPEN or CLOSING sockets,
+      // giving a CONNECTING socket a chance to finish its handshake and avoid
+      // "WebSocket is closed before the connection is established" errors.
+      if (!isMountedRef.current) {
+        if (currentReadyState !== WebSocket.CLOSED) {
+          try {
+            ws.close();
+          } catch {
+            // Ignore close errors
+          }
+        }
+      } else {
+        if (currentReadyState === WebSocket.OPEN || currentReadyState === WebSocket.CLOSING) {
+          try {
+            ws.close();
+          } catch {
+            // Ignore close errors
+          }
         }
       }
     }
@@ -233,8 +245,11 @@ function MSEPlayer({
   }, [isPlaying, playbackEnabled]);
 
   const onOpen = useCallback(() => {
-    // If we were marked for intentional disconnect or component unmounted, close immediately
-    if (intentionalDisconnectRef.current || !isMountedRef.current) {
+    // If we were marked for intentional disconnect, close immediately.
+    // Don't check isMountedRef here — during initial mount, lifecycle effects
+    // can briefly toggle it false, killing a valid CONNECTING→OPEN transition.
+    // isMountedRef is still checked in reconnect() to prevent zombie reconnects.
+    if (intentionalDisconnectRef.current) {
       wsRef.current?.close();
       wsRef.current = null;
       return;
@@ -251,7 +266,7 @@ function MSEPlayer({
       } else {
         ondataRef.current?.(ev.data);
       }
-    });
+    }, { signal: wsAbortRef.current?.signal });
 
     ondataRef.current = null;
     onmessageRef.current = {};
