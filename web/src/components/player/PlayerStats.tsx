@@ -59,17 +59,17 @@ export function PlayerStats({ stats, minimal }: PlayerStatsProps) {
   );
 
   const minimalStatsContent = (
-    <div className="flex flex-row items-center justify-center gap-4">
-      <div className="flex flex-col items-center justify-start gap-1">
+    <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
+      <div className="flex flex-col items-center justify-start">
         <span className="text-white/70">{t("stats.streamType.short")}</span>
         <span className="text-white">{stats.streamType}</span>
       </div>
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center">
         <span className="text-white/70">{t("stats.bandwidth.short")}</span>{" "}
         <span className="text-white">{stats.bandwidth.toFixed(2)} kBps</span>
       </div>
       {stats.latency != undefined && (
-        <div className="hidden flex-col items-center gap-1 md:flex">
+        <div className="hidden flex-col items-center md:flex">
           <span className="text-white/70">
             {t("stats.latency.short.title")}
           </span>
@@ -83,7 +83,7 @@ export function PlayerStats({ stats, minimal }: PlayerStatsProps) {
         </div>
       )}
       {stats.droppedFrames != undefined && (
-        <div className="flex flex-col items-center justify-end gap-1">
+        <div className="flex flex-col items-center justify-end">
           <span className="text-white/70">
             {t("stats.droppedFrames.short.title")}
           </span>
@@ -102,9 +102,9 @@ export function PlayerStats({ stats, minimal }: PlayerStatsProps) {
       <div
         className={cn(
           minimal
-            ? "absolute bottom-0 left-0 max-h-[50%] w-full overflow-y-auto rounded-b-lg p-1 md:rounded-b-xl md:p-3"
+            ? "absolute bottom-0 left-0 w-full overflow-hidden rounded-b-lg p-0.5 md:rounded-b-xl md:p-2"
             : "absolute bottom-2 right-2 min-w-52 rounded-2xl p-4",
-          "z-50 flex flex-col gap-1 bg-black/70 text-[9px] duration-300 animate-in fade-in md:text-xs",
+          "z-50 flex flex-col gap-0.5 bg-black/70 text-[7px] duration-300 animate-in fade-in md:text-[9px]",
         )}
       >
         {minimal ? minimalStatsContent : fullStatsContent}
