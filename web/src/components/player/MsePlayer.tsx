@@ -83,8 +83,6 @@ function MSEPlayer({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isRotatedGrid, setIsRotatedGrid] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const wsAbortRef = useRef<AbortController | null>(null);
-  const isMountedRef = useRef<boolean>(false);
   const reconnectTIDRef = useRef<number | null>(null);
   const intentionalDisconnectRef = useRef<boolean>(false);
   const ondataRef = useRef<((data: ArrayBufferLike) => void) | null>(null);
@@ -170,11 +168,10 @@ function MSEPlayer({
 
     setConnectTS(Date.now());
 
-    wsAbortRef.current = new AbortController();
     wsRef.current = new WebSocket(wsURL);
     wsRef.current.binaryType = "arraybuffer";
-    wsRef.current.addEventListener("open", onOpen, { signal: wsAbortRef.current.signal });
-    wsRef.current.addEventListener("close", onClose, { signal: wsAbortRef.current.signal });
+    wsRef.current.addEventListener("open", onOpen);
+    wsRef.current.addEventListener("close", onClose);
     // we know that these deps are correct
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsURL]);
@@ -207,14 +204,20 @@ function MSEPlayer({
       intentionalDisconnectRef.current = true;
       setWsState(WebSocket.CLOSED);
 
-      // Abort all event listeners registered via AbortController
-      // This guarantees removal regardless of callback identity
-      wsAbortRef.current?.abort();
-      wsAbortRef.current = null;
+      // Remove event listeners to prevent them firing during close
+      try {
+        ws.removeEventListener("open", onOpen);
+        ws.removeEventListener("close", onClose);
+      } catch {
+        // Ignore errors removing listeners
+      }
 
-      // Close the socket in any non-CLOSED state (including CONNECTING)
-      // WebSocket spec allows close() on CONNECTING — browser will abort the handshake
-      if (currentReadyState !== WebSocket.CLOSED) {
+      // Only call close() if the socket is OPEN or CLOSING
+      // For CONNECTING or CLOSED sockets, just let it die
+      if (
+        currentReadyState === WebSocket.OPEN ||
+        currentReadyState === WebSocket.CLOSING
+      ) {
         try {
           ws.close();
         } catch {
@@ -233,8 +236,8 @@ function MSEPlayer({
   }, [isPlaying, playbackEnabled]);
 
   const onOpen = useCallback(() => {
-    // If we were marked for intentional disconnect or component unmounted, close immediately
-    if (intentionalDisconnectRef.current || !isMountedRef.current) {
+    // If we were marked for intentional disconnect while connecting, close immediately
+    if (intentionalDisconnectRef.current) {
       wsRef.current?.close();
       wsRef.current = null;
       return;
@@ -272,8 +275,8 @@ function MSEPlayer({
   }, []);
 
   const reconnect = (timeout?: number) => {
-    // Don't reconnect if intentional disconnect was flagged or component unmounted
-    if (intentionalDisconnectRef.current || !isMountedRef.current) {
+    // Don't reconnect if intentional disconnect was flagged
+    if (intentionalDisconnectRef.current) {
       return;
     }
 
@@ -291,9 +294,9 @@ function MSEPlayer({
 
   const onClose = useCallback(() => {
     // Don't reconnect if this was an intentional disconnect
-    // The flag is reset only in onConnect, not here — resetting here
-    // would open a window for zombie reconnects after unmount
     if (intentionalDisconnectRef.current) {
+      // Reset the flag so future connects are allowed
+      intentionalDisconnectRef.current = false;
       return;
     }
 
@@ -647,24 +650,15 @@ function MSEPlayer({
     fallbackTimeout,
   ]);
 
-  // Keep refs to latest versions of connect/disconnect so the cleanup
-  // always calls the current version, avoiding stale closures
-  const onConnectRef = useRef(onConnect);
-  const onDisconnectRef = useRef(onDisconnect);
-  onConnectRef.current = onConnect;
-  onDisconnectRef.current = onDisconnect;
-
   useEffect(() => {
     if (!playbackEnabled) {
       return;
     }
 
-    isMountedRef.current = true;
-    onConnectRef.current();
+    onConnect();
 
     return () => {
-      isMountedRef.current = false;
-      onDisconnectRef.current();
+      onDisconnect();
     };
     // we know that these deps are correct
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -683,9 +677,9 @@ function MSEPlayer({
 
     const listener = () => {
       if (document.hidden) {
-        onDisconnectRef.current();
+        onDisconnect();
       } else if (videoRef.current?.isConnected) {
-        onConnectRef.current();
+        onConnect();
       }
     };
 
@@ -736,7 +730,7 @@ function MSEPlayer({
       }
 
       setTimeout(() => {
-        if (!playbackEnabled) onDisconnectRef.current();
+        if (!playbackEnabled) onDisconnect();
       }, 10000);
     }
     // we know that these deps are correct
