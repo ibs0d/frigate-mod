@@ -200,6 +200,7 @@ module.exports = {
     },
   },
   plugins: [
+    require("@tailwindcss/container-queries"),
     require("tailwindcss-animate"),
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     require("tailwind-scrollbar")({ nocompatible: true }),

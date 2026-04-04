@@ -944,7 +944,7 @@ export default function DraggableGridLayout({
             streamMetadata={streamMetadata}
           >
             <div
-              className="relative size-full overflow-hidden"
+              className="@container relative size-full overflow-hidden"
               ref={(node) => {
                 cameraZoomViewportRefs.current[camera.name] = node;
 

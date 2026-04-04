@@ -59,7 +59,7 @@ export function PlayerStats({ stats, minimal }: PlayerStatsProps) {
   );
 
   const minimalStatsContent = (
-    <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
+    <div className="flex flex-row flex-wrap items-center justify-center gap-x-[1.5cqw] gap-y-[0.3cqw]">
       <div className="flex flex-col items-center justify-start">
         <span className="text-white/70">{t("stats.streamType.short")}</span>
         <span className="text-white">{stats.streamType}</span>
@@ -102,9 +102,9 @@ export function PlayerStats({ stats, minimal }: PlayerStatsProps) {
       <div
         className={cn(
           minimal
-            ? "absolute bottom-0 left-0 w-full overflow-hidden rounded-b-lg p-0.5 md:rounded-b-xl md:p-2"
-            : "absolute bottom-2 right-2 min-w-52 rounded-2xl p-4",
-          "z-50 flex flex-col gap-0.5 bg-black/70 text-[7px] duration-300 animate-in fade-in md:text-[9px]",
+            ? "absolute bottom-0 left-0 w-full overflow-hidden rounded-b-lg p-[0.5cqw] text-[clamp(7px,2.5cqw,12px)]"
+            : "absolute bottom-2 right-2 min-w-52 rounded-2xl p-4 text-[9px] md:text-xs",
+          "z-50 flex flex-col gap-0.5 bg-black/70 duration-300 animate-in fade-in",
         )}
       >
         {minimal ? minimalStatsContent : fullStatsContent}
