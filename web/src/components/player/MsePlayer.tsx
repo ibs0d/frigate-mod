@@ -212,12 +212,11 @@ function MSEPlayer({
         // Ignore errors removing listeners
       }
 
-      // Only call close() if the socket is OPEN or CLOSING
-      // For CONNECTING or CLOSED sockets, just let it die
-      if (
-        currentReadyState === WebSocket.OPEN ||
-        currentReadyState === WebSocket.CLOSING
-      ) {
+      // Close the socket in any state except CLOSED to free browser resources.
+      // WebSockets in CONNECTING state must also be closed, otherwise they
+      // continue the TCP handshake and occupy a connection slot, eventually
+      // exhausting the browser's per-domain WebSocket limit.
+      if (currentReadyState !== WebSocket.CLOSED) {
         try {
           ws.close();
         } catch {
