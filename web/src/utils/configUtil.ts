@@ -151,13 +151,6 @@ export function buildOverrides(
 
   if (Array.isArray(current)) {
     if (
-      current.length === 0 &&
-      (base === undefined || base === null) &&
-      (defaults === undefined || defaults === null)
-    ) {
-      return undefined;
-    }
-    if (
       (base === undefined &&
         defaults !== undefined &&
         isEqual(current, defaults)) ||
