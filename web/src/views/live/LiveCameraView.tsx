@@ -1185,7 +1185,7 @@ function FrigateCameraFeatures({
           loading={isSnapshotLoading}
         />
         {!fullscreen && (
-          <DropdownMenu modal={false}>
+          <DropdownMenu>
             <DropdownMenuTrigger>
               <div
                 className={cn(
@@ -1575,7 +1575,7 @@ function FrigateCameraFeatures({
                         ns: "components/dialog",
                       })}
                     </div>
-                    <Popover modal={true}>
+                    <Popover>
                       <PopoverTrigger asChild>
                         <div className="cursor-pointer p-0">
                           <LuInfo className="size-4" />
@@ -1662,7 +1662,7 @@ function FrigateCameraFeatures({
                             <>
                               <LuX className="size-4 text-danger" />
                               <div>{t("stream.audio.unavailable")}</div>
-                              <Popover modal={true}>
+                              <Popover>
                                 <PopoverTrigger asChild>
                                   <div className="cursor-pointer p-0">
                                     <LuInfo className="size-4" />
@@ -1706,7 +1706,7 @@ function FrigateCameraFeatures({
                             <>
                               <LuX className="size-4 text-danger" />
                               <div>{t("stream.twoWayTalk.unavailable")}</div>
-                              <Popover modal={true}>
+                              <Popover>
                                 <PopoverTrigger asChild>
                                   <div className="cursor-pointer p-0">
                                     <LuInfo className="size-4" />
