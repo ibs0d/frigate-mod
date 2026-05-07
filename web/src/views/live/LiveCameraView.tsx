@@ -1093,10 +1093,12 @@ function FrigateCameraFeatures({
               title={
                 recordState == "ON"
                   ? t("recording.disable")
-                  : t("recording.enable")
+                  : camera.record.enabled_in_config
+                    ? t("recording.enable")
+                    : t("recording.disabledInConfig")
               }
               onClick={() => sendRecord(recordState == "ON" ? "OFF" : "ON")}
-              disabled={!cameraEnabled}
+              disabled={!cameraEnabled || !camera.record.enabled_in_config}
             />
             <CameraFeatureToggle
               className="p-2 md:p-0"
