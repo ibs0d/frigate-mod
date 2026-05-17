@@ -64,9 +64,9 @@ class TestConfig(unittest.TestCase):
 
     def test_config_class(self):
         frigate_config = FrigateConfig(**self.minimal)
-        assert "ov" in frigate_config.detectors.keys()
-        assert frigate_config.detectors["ov"].type == DetectorTypeEnum.openvino
-        assert frigate_config.detectors["ov"].model.width == 300
+        assert "cpu" in frigate_config.detectors.keys()
+        assert frigate_config.detectors["cpu"].type == DetectorTypeEnum.cpu
+        assert frigate_config.detectors["cpu"].model.width == 320
 
     def test_default_camera_recordings_path(self):
         frigate_config = FrigateConfig(**self.minimal)
