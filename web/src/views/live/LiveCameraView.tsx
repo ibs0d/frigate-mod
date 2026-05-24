@@ -1069,7 +1069,7 @@ function FrigateCameraFeatures({
               Icon={enabledState == "ON" ? LuPower : LuPowerOff}
               isActive={enabledState == "ON"}
               title={
-                enabledState == "ON" ? t("camera.disable") : t("camera.enable")
+                enabledState == "ON" ? t("camera.turnOff") : t("camera.turnOn")
               }
               onClick={() => sendEnabled(enabledState == "ON" ? "OFF" : "ON")}
               disabled={debug}
@@ -1510,7 +1510,7 @@ function FrigateCameraFeatures({
             {isAdmin && (
               <>
                 <FilterSwitch
-                  label={t("cameraSettings.cameraEnabled")}
+                  label={t("cameraSettings.camera")}
                   isChecked={enabledState == "ON"}
                   onCheckedChange={() =>
                     sendEnabled(enabledState == "ON" ? "OFF" : "ON")
