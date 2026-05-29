@@ -401,7 +401,7 @@ class RecordingMaintainer(threading.Thread):
                     if highest == "continuous"
                     else RetainModeEnum.motion
                 )
-                segment_info = self.segment_stats(camera, start_time, end_time)
+                segment_stats = self.segment_stats(camera, start_time, end_time)
 
                 # Here we only check if we should move the segment based on non-object recording retention
                 # we will always want to check for overlapping review items below before dropping the segment
