@@ -315,7 +315,7 @@ class StorageMaintainer(threading.Thread):
         # check if need to delete retained segments
         if deleted_segments_size < hourly_bandwidth:
             logger.error(
-                f"Could not clear {hourly_bandwidth} MB, currently {deleted_segments_size} MB have been cleared. Retained recordings must be deleted."
+                f"Could not clear {hourly_bandwidth} MB, currently {deleted_segments_size:.2f} MB have been cleared. Retained recordings must be deleted."
             )
             recordings = (
                 Recordings.select(
@@ -345,7 +345,7 @@ class StorageMaintainer(threading.Thread):
                     pass
                 deleted_recordings.append(recording)
         else:
-            logger.info(f"Cleaned up {deleted_segments_size} MB of recordings")
+            logger.info(f"Cleaned up {deleted_segments_size:.2f} MB of recordings")
 
         logger.debug(f"Expiring {len(deleted_recordings)} recordings")
         # delete up to 100,000 at a time
