@@ -15,6 +15,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -853,7 +854,7 @@ export function CameraGroupEdit({
               <FormLabel>{t("group.name.label")}</FormLabel>
               <FormControl>
                 <Input
-                  className="text-md w-full border border-input bg-background p-2 hover:bg-accent hover:text-accent-foreground dark:[color-scheme:dark]"
+                  className="w-full border border-input bg-background p-2 hover:bg-accent hover:text-accent-foreground dark:[color-scheme:dark]"
                   placeholder={t("group.name.placeholder")}
                   {...field}
                 />
@@ -1022,10 +1023,9 @@ export function CameraGroupEdit({
 
         <Separator className="my-2 flex bg-secondary" />
 
-        <div className="flex flex-row gap-2 py-5 md:pb-0">
+        <DialogFooter className="py-5 md:pb-0">
           <Button
             type="button"
-            className="flex flex-1"
             aria-label={t("button.cancel", { ns: "common" })}
             onClick={onCancel}
           >
@@ -1034,7 +1034,6 @@ export function CameraGroupEdit({
           <Button
             variant="select"
             disabled={isLoading}
-            className="flex flex-1"
             aria-label={t("button.save", { ns: "common" })}
             type="submit"
           >
@@ -1047,7 +1046,7 @@ export function CameraGroupEdit({
               t("button.save", { ns: "common" })
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Form>
   );
