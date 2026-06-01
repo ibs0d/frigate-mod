@@ -21,3 +21,8 @@ class CameraUiConfig(FrigateBaseModel):
         title="Rotate in grid",
         description="Rotate this camera 90 degrees clockwise in multi-camera dashboard/grid views.",
     )
+    review: bool = Field(
+        default=True,
+        title="Show in review",
+        description="Toggle whether this camera is visible in review (the review page and its camera filter, motion review, and the history view).",
+    )
