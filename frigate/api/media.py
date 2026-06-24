@@ -413,7 +413,9 @@ async def submit_recording_snapshot_to_plus(
             )
 
         nd = cv2.imdecode(np.frombuffer(image_data, dtype=np.int8), cv2.IMREAD_COLOR)
-        request.app.frigate_config.plus_api.upload_image(nd, camera_name)
+        await asyncio.to_thread(
+            request.app.frigate_config.plus_api.upload_image, nd, camera_name
+        )
 
         return JSONResponse(
             content={
@@ -1270,14 +1272,14 @@ async def event_preview(request: Request, event_id: str):
     end_ts = start_ts + (
         min(event.end_time - event.start_time, 20) if event.end_time else 20
     )
-    return preview_gif(request, event.camera, start_ts, end_ts)
+    return await preview_gif(request, event.camera, start_ts, end_ts)
 
 
 @router.get(
     "/{camera_name}/start/{start_ts}/end/{end_ts}/preview.gif",
     dependencies=[Depends(require_camera_access)],
 )
-def preview_gif(
+async def preview_gif(
     request: Request,
     camera_name: str,
     start_ts: float,
@@ -1340,7 +1342,8 @@ def preview_gif(
             "-",
         ]
 
-        process = sp.run(
+        process = await asyncio.to_thread(
+            sp.run,
             ffmpeg_cmd,
             capture_output=True,
         )
@@ -1419,7 +1422,8 @@ def preview_gif(
             "-",
         ]
 
-        process = sp.run(
+        process = await asyncio.to_thread(
+            sp.run,
             ffmpeg_cmd,
             input=str.encode("\n".join(selected_previews)),
             capture_output=True,
@@ -1448,7 +1452,7 @@ def preview_gif(
     "/{camera_name}/start/{start_ts}/end/{end_ts}/preview.mp4",
     dependencies=[Depends(require_camera_access)],
 )
-def preview_mp4(
+async def preview_mp4(
     request: Request,
     camera_name: str,
     start_ts: float,
@@ -1528,7 +1532,8 @@ def preview_mp4(
             path,
         ]
 
-        process = sp.run(
+        process = await asyncio.to_thread(
+            sp.run,
             ffmpeg_cmd,
             capture_output=True,
         )
@@ -1604,7 +1609,8 @@ def preview_mp4(
             path,
         ]
 
-        process = sp.run(
+        process = await asyncio.to_thread(
+            sp.run,
             ffmpeg_cmd,
             input=str.encode("\n".join(selected_previews)),
             capture_output=True,
@@ -1657,9 +1663,9 @@ async def review_preview(
     )
 
     if format == "gif":
-        return preview_gif(request, review.camera, start_ts, end_ts)
+        return await preview_gif(request, review.camera, start_ts, end_ts)
     else:
-        return preview_mp4(request, review.camera, start_ts, end_ts)
+        return await preview_mp4(request, review.camera, start_ts, end_ts)
 
 
 @router.get(
