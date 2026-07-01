@@ -49,6 +49,7 @@ type DynamicVideoPlayerProps = {
   onControllerReady: (controller: DynamicVideoController) => void;
   onTimestampUpdate?: (timestamp: number) => void;
   onClipEnded?: () => void;
+  onClipPrevious?: (diff: number) => void;
   onSeekToTime?: (timestamp: number, play?: boolean) => void;
   setFullResolution: React.Dispatch<React.SetStateAction<VideoResolutionType>>;
   toggleFullscreen: () => void;
@@ -69,6 +70,7 @@ export default function DynamicVideoPlayer({
   onControllerReady,
   onTimestampUpdate,
   onClipEnded,
+  onClipPrevious,
   onSeekToTime,
   setFullResolution,
   toggleFullscreen,
@@ -345,6 +347,7 @@ export default function DynamicVideoPlayer({
           onTimeUpdate={onTimeUpdate}
           onPlayerLoaded={onPlayerLoaded}
           onClipEnded={onValidateClipEnd}
+          onClipPrevious={onClipPrevious}
           onSeekToTime={(timestamp, play) => {
             if (onSeekToTime) {
               onSeekToTime(timestamp, play);
