@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 
 from pydantic import Field, field_validator
 
@@ -8,7 +8,7 @@ __all__ = ["CameraGroupConfig"]
 
 
 class CameraGroupConfig(FrigateBaseModel):
-    cameras: Union[str, list[str]] = Field(
+    cameras: str | list[str] = Field(
         default_factory=list,
         title="Camera list",
         description="Array of camera names included in this group.",

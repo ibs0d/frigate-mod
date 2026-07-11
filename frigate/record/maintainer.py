@@ -11,7 +11,7 @@ import time
 from collections import defaultdict
 from multiprocessing.synchronize import Event as MpEvent
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import psutil
@@ -99,7 +99,7 @@ class RecordingMaintainer(threading.Thread):
         self.stop_event = stop_event
         self.object_recordings_info: dict[str, list] = defaultdict(list)
         self.audio_recordings_info: dict[str, list] = defaultdict(list)
-        self.end_time_cache: dict[str, Tuple[datetime.datetime, float]] = {}
+        self.end_time_cache: dict[str, tuple[datetime.datetime, float]] = {}
         self.unexpected_cache_files_logged: bool = False
 
     async def move_files(self) -> None:
@@ -126,7 +126,7 @@ class RecordingMaintainer(threading.Thread):
 
             start_time = datetime.datetime.strptime(
                 date, CACHE_SEGMENT_FORMAT
-            ).astimezone(datetime.timezone.utc)
+            ).astimezone(datetime.UTC)
             if (
                 camera not in newest_cache_segments
                 or start_time > newest_cache_segments[camera]["start_time"]
@@ -186,7 +186,7 @@ class RecordingMaintainer(threading.Thread):
             # important that start_time is utc because recordings are stored and compared in utc
             start_time = datetime.datetime.strptime(
                 date, CACHE_SEGMENT_FORMAT
-            ).astimezone(datetime.timezone.utc)
+            ).astimezone(datetime.UTC)
 
             grouped_recordings[camera].append(
                 {
@@ -304,9 +304,7 @@ class RecordingMaintainer(threading.Thread):
 
         self._expire_stale_recordings_info(grouped_recordings)
 
-        recordings_to_insert: list[Optional[dict[str, Any]]] = await asyncio.gather(
-            *tasks
-        )
+        recordings_to_insert: list[dict[str, Any] | None] = await asyncio.gather(*tasks)
 
         # fire and forget recordings entries
         self.requestor.send_data(
@@ -335,7 +333,7 @@ class RecordingMaintainer(threading.Thread):
 
     async def validate_and_move_segment(
         self, camera: str, reviews: Any, recording: dict[str, Any]
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         cache_path: str = recording["cache_path"]
         start_time: datetime.datetime = recording["start_time"]
 
@@ -412,7 +410,7 @@ class RecordingMaintainer(threading.Thread):
             if (
                 datetime.datetime.fromtimestamp(
                     most_recently_processed_frame_time
-                ).astimezone(datetime.timezone.utc)
+                ).astimezone(datetime.UTC)
                 >= end_time
             ):
                 record_mode = (
@@ -494,7 +492,7 @@ class RecordingMaintainer(threading.Thread):
             )
             retain_cutoff = datetime.datetime.fromtimestamp(
                 most_recently_processed_frame_time - record_config.event_pre_capture
-            ).astimezone(datetime.timezone.utc)
+            ).astimezone(datetime.UTC)
             
             if end_time < retain_cutoff:
                 self.drop_segment(cache_path)
@@ -619,7 +617,7 @@ class RecordingMaintainer(threading.Thread):
         duration: float,
         cache_path: str,
         segment_info: SegmentInfo,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         
         # directory will be in utc due to start_time being in utc
         directory = os.path.join(
