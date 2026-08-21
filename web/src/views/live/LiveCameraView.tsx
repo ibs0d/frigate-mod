@@ -109,6 +109,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useIsVahtaRole } from "@/hooks/use-is-vahta-role";
 import { useTranslation } from "react-i18next";
 import { useDocDomain } from "@/hooks/use-doc-domain";
 import { detectCameraAudioFeatures } from "@/utils/cameraUtil";
@@ -146,6 +147,7 @@ export default function LiveCameraView({
 }: LiveCameraViewProps) {
   const { t } = useTranslation(["views/live", "components/dialog"]);
   const navigate = useNavigate();
+  const isVahtaRole = useIsVahtaRole();
   const { isPortrait } = useMobileOrientation();
   const mainRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -564,30 +566,32 @@ export default function LiveCameraView({
                   </div>
                 )}
               </Button>
-              <Button
-                className="flex items-center gap-2.5 rounded-lg"
-                aria-label={t("history.label")}
-                size="sm"
-                onClick={() => {
-                  navigate(`review?cameras=${camera.name}`, {
-                    state: {
-                      severity: "alert",
-                      recording: {
-                        camera: camera.name,
-                        startTime: Date.now() / 1000 - 30,
+              {!isVahtaRole && (
+                <Button
+                  className="flex items-center gap-2.5 rounded-lg"
+                  aria-label={t("history.label")}
+                  size="sm"
+                  onClick={() => {
+                    navigate(`review?cameras=${camera.name}`, {
+                      state: {
                         severity: "alert",
-                      } as RecordingStartingPoint,
-                    },
-                  });
-                }}
-              >
-                <LuHistory className="size-5 text-secondary-foreground" />
-                {isDesktop && (
-                  <div className="text-primary">
-                    {t("button.history", { ns: "common" })}
-                  </div>
-                )}
-              </Button>
+                        recording: {
+                          camera: camera.name,
+                          startTime: Date.now() / 1000 - 30,
+                          severity: "alert",
+                        } as RecordingStartingPoint,
+                      },
+                    });
+                  }}
+                >
+                  <LuHistory className="size-5 text-secondary-foreground" />
+                  {isDesktop && (
+                    <div className="text-primary">
+                      {t("button.history", { ns: "common" })}
+                    </div>
+                  )}
+                </Button>
+              )}
             </div>
           ) : (
             <div />
@@ -610,7 +614,7 @@ export default function LiveCameraView({
                 )}
               </Button>
             )}
-            {supportsFullscreen && (
+            {supportsFullscreen && !isVahtaRole && (
               <CameraFeatureToggle
                 className="p-2 md:p-0"
                 variant={fullscreen ? "overlay" : "primary"}
@@ -625,28 +629,31 @@ export default function LiveCameraView({
                 onClick={toggleFullscreen}
               />
             )}
-            {!isIOS && !isFirefox && preferredLiveMode != "jsmpeg" && (
-              <CameraFeatureToggle
-                className="p-2 md:p-0"
-                variant={fullscreen ? "overlay" : "primary"}
-                Icon={LuPictureInPicture}
-                isActive={pip}
-                title={
-                  pip
-                    ? t("button.close", { ns: "common" })
-                    : t("button.pictureInPicture", { ns: "common" })
-                }
-                onClick={() => {
-                  if (!pip) {
-                    setPip(true);
-                  } else {
-                    document.exitPictureInPicture();
-                    setPip(false);
+            {!isVahtaRole &&
+              !isIOS &&
+              !isFirefox &&
+              preferredLiveMode != "jsmpeg" && (
+                <CameraFeatureToggle
+                  className="p-2 md:p-0"
+                  variant={fullscreen ? "overlay" : "primary"}
+                  Icon={LuPictureInPicture}
+                  isActive={pip}
+                  title={
+                    pip
+                      ? t("button.close", { ns: "common" })
+                      : t("button.pictureInPicture", { ns: "common" })
                   }
-                }}
-                disabled={!cameraEnabled || debug}
-              />
-            )}
+                  onClick={() => {
+                    if (!pip) {
+                      setPip(true);
+                    } else {
+                      document.exitPictureInPicture();
+                      setPip(false);
+                    }
+                  }}
+                  disabled={!cameraEnabled || debug}
+                />
+              )}
             {supports2WayTalk && (
               <CameraFeatureToggle
                 className="p-2 md:p-0"
@@ -705,6 +712,7 @@ export default function LiveCameraView({
               cameraEnabled={cameraEnabled}
               debug={debug}
               setDebug={setDebug}
+              hideRestrictedControls={isVahtaRole}
             />
           </div>
         </div>
@@ -863,6 +871,7 @@ type FrigateCameraFeaturesProps = {
   cameraEnabled: boolean;
   debug: boolean;
   setDebug: (debug: boolean) => void;
+  hideRestrictedControls: boolean;
 };
 function FrigateCameraFeatures({
   camera,
@@ -885,6 +894,7 @@ function FrigateCameraFeatures({
   cameraEnabled,
   debug,
   setDebug,
+  hideRestrictedControls,
 }: FrigateCameraFeaturesProps) {
   const { t } = useTranslation(["views/live", "components/dialog"]);
   const { getLocaleDocUrl } = useDocDomain();
@@ -1170,29 +1180,33 @@ function FrigateCameraFeatures({
             )}
           </>
         )}
-        <CameraFeatureToggle
-          className={cn(
-            "p-2 md:p-0",
-            isRecording && "animate-pulse bg-red-500 hover:bg-red-600",
-          )}
-          variant={fullscreen ? "overlay" : "primary"}
-          Icon={isRecording ? TbRecordMail : TbRecordMailOff}
-          isActive={isRecording}
-          title={t("manualRecording." + (isRecording ? "stop" : "start"))}
-          onClick={handleEventButtonClick}
-          disabled={!cameraEnabled || debug}
-        />
-        <CameraFeatureToggle
-          className="p-2 md:p-0"
-          variant={fullscreen ? "overlay" : "primary"}
-          Icon={TbCameraDown}
-          isActive={false}
-          title={t("snapshot.takeSnapshot")}
-          onClick={handleSnapshotClick}
-          disabled={!cameraEnabled || debug || isSnapshotLoading}
-          loading={isSnapshotLoading}
-        />
-        {!fullscreen && (
+        {!hideRestrictedControls && (
+          <CameraFeatureToggle
+            className={cn(
+              "p-2 md:p-0",
+              isRecording && "animate-pulse bg-red-500 hover:bg-red-600",
+            )}
+            variant={fullscreen ? "overlay" : "primary"}
+            Icon={isRecording ? TbRecordMail : TbRecordMailOff}
+            isActive={isRecording}
+            title={t("manualRecording." + (isRecording ? "stop" : "start"))}
+            onClick={handleEventButtonClick}
+            disabled={!cameraEnabled || debug}
+          />
+        )}
+        {!hideRestrictedControls && (
+          <CameraFeatureToggle
+            className="p-2 md:p-0"
+            variant={fullscreen ? "overlay" : "primary"}
+            Icon={TbCameraDown}
+            isActive={false}
+            title={t("snapshot.takeSnapshot")}
+            onClick={handleSnapshotClick}
+            disabled={!cameraEnabled || debug || isSnapshotLoading}
+            loading={isSnapshotLoading}
+          />
+        )}
+        {!fullscreen && !hideRestrictedControls && (
           <DropdownMenu>
             <DropdownMenuTrigger>
               <div
@@ -1490,6 +1504,10 @@ function FrigateCameraFeatures({
 
   // mobile doesn't show settings in fullscreen view
   if (fullscreen) {
+    return;
+  }
+
+  if (hideRestrictedControls) {
     return;
   }
 
