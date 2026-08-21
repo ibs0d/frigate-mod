@@ -54,6 +54,8 @@ import { Toaster } from "@/components/ui/sonner";
 import LiveContextMenu from "@/components/menu/LiveContextMenu";
 import { useStreamingSettings } from "@/context/streaming-settings-provider";
 import { useTranslation } from "react-i18next";
+import useKeyboardListener from "@/hooks/use-keyboard-listener";
+import { useIsVahtaRole } from "@/hooks/use-is-vahta-role";
 import {
   CAMERA_ZOOM_MIN_SCALE,
   CameraZoomRuntimeTransform,
@@ -112,6 +114,7 @@ export default function DraggableGridLayout({
 }: DraggableGridLayoutProps) {
   const { t } = useTranslation(["views/live"]);
   const { data: config } = useSWR<FrigateConfig>("config");
+  const isVahtaRole = useIsVahtaRole();
   const birdseyeConfig = useMemo(() => config?.birdseye, [config]);
 
   // preferred live modes per camera
@@ -609,6 +612,31 @@ export default function DraggableGridLayout({
       return newState;
     });
   };
+
+  useKeyboardListener(["S", "E", "F"], (key, modifiers) => {
+    if (
+      !isVahtaRole ||
+      !modifiers.down ||
+      modifiers.repeat ||
+      !modifiers.shift
+    ) {
+      return false;
+    }
+
+    switch (key) {
+      case "S":
+        toggleGlobalStreamStats();
+        return true;
+      case "E":
+        setIsEditMode((previous) => !previous);
+        return true;
+      case "F":
+        setFitToScreen(!fitToScreen);
+        return true;
+    }
+
+    return false;
+  });
 
   const [audioStates, setAudioStates] = useState<AudioState>({});
   const [volumeStates, setVolumeStates] = useState<VolumeState>({});
@@ -1143,7 +1171,7 @@ export default function DraggableGridLayout({
               {gridChildren}
             </Responsive>
           )}
-          {isDesktop && (
+          {isDesktop && !isVahtaRole && (
             <div
               className={cn(
                 "fixed",

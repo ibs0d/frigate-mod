@@ -56,6 +56,7 @@ import { EmptyCard } from "@/components/card/EmptyCard";
 import { BsFillCameraVideoOffFill } from "react-icons/bs";
 import { AuthContext } from "@/context/auth-context";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useIsVahtaRole } from "@/hooks/use-is-vahta-role";
 
 type LiveDashboardViewProps = {
   cameras: CameraConfig[];
@@ -74,6 +75,7 @@ export default function LiveDashboardView({
   toggleFullscreen,
 }: LiveDashboardViewProps) {
   const { t } = useTranslation(["views/live"]);
+  const isVahtaRole = useIsVahtaRole();
 
   const { data: config } = useSWR<FrigateConfig>("config");
 
@@ -626,7 +628,7 @@ export default function LiveDashboardView({
                   );
                 })}
               </div>
-              {isDesktop && (
+              {isDesktop && !isVahtaRole && (
                 <div
                   className={cn(
                     "fixed",
