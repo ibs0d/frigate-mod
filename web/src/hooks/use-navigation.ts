@@ -10,6 +10,7 @@ import { MdCategory, MdChat, MdVideoLibrary } from "react-icons/md";
 import { TbFaceId } from "react-icons/tb";
 import useSWR from "swr";
 import { useIsAdmin } from "./use-is-admin";
+import { useIsVahtaRole } from "./use-is-vahta-role";
 
 export const ID_LIVE = 1;
 export const ID_REVIEW = 2;
@@ -27,6 +28,7 @@ export default function useNavigation(
     revalidateOnFocus: false,
   });
   const isAdmin = useIsAdmin();
+  const isVahtaRole = useIsVahtaRole();
 
   const hasChatAgent = useMemo(
     () =>
@@ -52,6 +54,7 @@ export default function useNavigation(
           icon: MdVideoLibrary,
           title: "menu.review",
           url: "/review",
+          enabled: !isVahtaRole,
         },
         {
           id: ID_EXPLORE,
@@ -59,6 +62,7 @@ export default function useNavigation(
           icon: IoSearch,
           title: "menu.explore",
           url: "/explore",
+          enabled: !isVahtaRole,
         },
         {
           id: ID_EXPORT,
@@ -66,6 +70,7 @@ export default function useNavigation(
           icon: FaCompactDisc,
           title: "menu.export",
           url: "/export",
+          enabled: !isVahtaRole,
         },
         {
           id: ID_PLAYGROUND,
@@ -100,6 +105,12 @@ export default function useNavigation(
           enabled: isDesktop && isAdmin && hasChatAgent,
         },
       ] as NavData[],
-    [config?.face_recognition?.enabled, hasChatAgent, variant, isAdmin],
+    [
+      config?.face_recognition?.enabled,
+      hasChatAgent,
+      variant,
+      isAdmin,
+      isVahtaRole,
+    ],
   );
 }

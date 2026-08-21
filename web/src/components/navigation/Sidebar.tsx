@@ -7,6 +7,7 @@ import AccountSettings from "../menu/AccountSettings";
 import useNavigation from "@/hooks/use-navigation";
 import { baseUrl } from "@/api/baseUrl";
 import { useMemo } from "react";
+import { useIsVahtaRole } from "@/hooks/use-is-vahta-role";
 
 function Sidebar() {
   const basePath = useMemo(() => new URL(baseUrl).pathname, []);
@@ -15,6 +16,7 @@ function Sidebar() {
   const isBasePathMatch = useMatch(basePath);
 
   const navbarLinks = useNavigation();
+  const isVahtaRole = useIsVahtaRole();
 
   return (
     <aside className="scrollbar-container scrollbar-hidden absolute inset-y-0 left-0 z-10 flex w-[52px] flex-col justify-between overflow-y-auto border-r border-secondary-highlight bg-background_alt py-4">
@@ -41,7 +43,7 @@ function Sidebar() {
       </div>
       <div className="mb-8 flex flex-col items-center gap-4">
         <GeneralSettings />
-        <AccountSettings />
+        {!isVahtaRole && <AccountSettings />}
       </div>
     </aside>
   );

@@ -79,6 +79,7 @@ import { supportedLanguageKeys } from "@/lib/const";
 
 import { useDocDomain } from "@/hooks/use-doc-domain";
 import { MdCategory } from "react-icons/md";
+import { useIsVahtaRole } from "@/hooks/use-is-vahta-role";
 
 type GeneralSettingsProps = {
   className?: string;
@@ -168,6 +169,7 @@ export default function GeneralSettings({
   const { send: sendRestart } = useRestart();
 
   const isAdmin = useIsAdmin();
+  const isVahtaRole = useIsVahtaRole();
 
   const Container = isDesktop ? DropdownMenu : Drawer;
   const Trigger = isDesktop ? DropdownMenuTrigger : DrawerTrigger;
@@ -461,44 +463,46 @@ export default function GeneralSettings({
                 </DropdownMenuGroup>
               </>
             )}
-            <DropdownMenuLabel
-              className={isDesktop && isAdmin ? "mt-3" : "mt-1"}
-            >
-              {t("menu.configuration")}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <Link to="/settings">
-                <MenuItem
-                  className={
-                    isDesktop
-                      ? "cursor-pointer"
-                      : "flex w-full items-center p-2 text-sm"
-                  }
-                  aria-label={t("menu.settings")}
+            {!isVahtaRole && (
+              <>
+                <DropdownMenuLabel
+                  className={isDesktop && isAdmin ? "mt-3" : "mt-1"}
                 >
-                  <LuSettings className="mr-2 size-4" />
-                  <span>{t("menu.settings")}</span>
-                </MenuItem>
-              </Link>
-              {isAdmin && (
-                <>
-                  <Link to="/config">
+                  {t("menu.configuration")}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <Link to="/settings">
                     <MenuItem
                       className={
                         isDesktop
                           ? "cursor-pointer"
                           : "flex w-full items-center p-2 text-sm"
                       }
-                      aria-label={t("menu.configurationEditor")}
+                      aria-label={t("menu.settings")}
                     >
-                      <LuSquarePen className="mr-2 size-4" />
-                      <span>{t("menu.configurationEditor")}</span>
+                      <LuSettings className="mr-2 size-4" />
+                      <span>{t("menu.settings")}</span>
                     </MenuItem>
                   </Link>
-                </>
-              )}
-            </DropdownMenuGroup>
+                  {isAdmin && (
+                    <Link to="/config">
+                      <MenuItem
+                        className={
+                          isDesktop
+                            ? "cursor-pointer"
+                            : "flex w-full items-center p-2 text-sm"
+                        }
+                        aria-label={t("menu.configurationEditor")}
+                      >
+                        <LuSquarePen className="mr-2 size-4" />
+                        <span>{t("menu.configurationEditor")}</span>
+                      </MenuItem>
+                    </Link>
+                  )}
+                </DropdownMenuGroup>
+              </>
+            )}
             {isMobile && isAdmin && (
               <>
                 <DropdownMenuLabel className="mt-1">
@@ -735,35 +739,43 @@ export default function GeneralSettings({
                 </SubItemContent>
               </Portal>
             </SubItem>
-            <DropdownMenuLabel className={isDesktop ? "mt-3" : "mt-1"}>
-              {t("menu.help")}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <a href={getLocaleDocUrl("/")} target="_blank">
-              <MenuItem
-                className={
-                  isDesktop ? "cursor-pointer" : "flex items-center p-2 text-sm"
-                }
-                aria-label={t("menu.documentation.label")}
-              >
-                <LuLifeBuoy className="mr-2 size-4" />
-                <span>{t("menu.documentation.title")}</span>
-              </MenuItem>
-            </a>
-            <a
-              href="https://github.com/blakeblackshear/frigate"
-              target="_blank"
-            >
-              <MenuItem
-                className={
-                  isDesktop ? "cursor-pointer" : "flex items-center p-2 text-sm"
-                }
-                aria-label="Frigate Github"
-              >
-                <LuGithub className="mr-2 size-4" />
-                <span>GitHub</span>
-              </MenuItem>
-            </a>
+            {!isVahtaRole && (
+              <>
+                <DropdownMenuLabel className={isDesktop ? "mt-3" : "mt-1"}>
+                  {t("menu.help")}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <a href={getLocaleDocUrl("/")} target="_blank">
+                  <MenuItem
+                    className={
+                      isDesktop
+                        ? "cursor-pointer"
+                        : "flex items-center p-2 text-sm"
+                    }
+                    aria-label={t("menu.documentation.label")}
+                  >
+                    <LuLifeBuoy className="mr-2 size-4" />
+                    <span>{t("menu.documentation.title")}</span>
+                  </MenuItem>
+                </a>
+                <a
+                  href="https://github.com/blakeblackshear/frigate"
+                  target="_blank"
+                >
+                  <MenuItem
+                    className={
+                      isDesktop
+                        ? "cursor-pointer"
+                        : "flex items-center p-2 text-sm"
+                    }
+                    aria-label="Frigate Github"
+                  >
+                    <LuGithub className="mr-2 size-4" />
+                    <span>GitHub</span>
+                  </MenuItem>
+                </a>
+              </>
+            )}
             {isAdmin && (
               <>
                 <DropdownMenuSeparator
