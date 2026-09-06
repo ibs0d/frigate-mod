@@ -30,8 +30,6 @@ import {
 } from "@/types/live";
 import ActivityIndicator from "@/components/indicators/activity-indicator";
 import { PlayerStats } from "@/components/player/PlayerStats";
-import { MdCircle } from "react-icons/md";
-import { useCameraActivity } from "@/hooks/use-camera-activity";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { isEqual } from "lodash";
@@ -1067,10 +1065,6 @@ export default function DraggableGridLayout({
                     minimal={true}
                   />
                 )}
-              <CameraMotionDot
-                camera={camera}
-                autoLive={autoLive ?? globalAutoLive}
-              />
             </div>
             {isEditMode && showCircles && <CornerCircles />}
           </GridLiveContextMenu>
@@ -1351,25 +1345,6 @@ const BirdseyeLivePlayerGridItem = React.forwardRef<
     );
   },
 );
-
-// Separate component so it can call useCameraActivity as a hook (no hooks in loops).
-// Direct WS subscription guarantees the dot reacts to motion changes in real-time
-// without relying on an intermediate callback → parent-state chain.
-function CameraMotionDot({
-  camera,
-  autoLive,
-}: {
-  camera: CameraConfig;
-  autoLive?: boolean;
-}) {
-  const { activeMotion, offline } = useCameraActivity(camera);
-  if (autoLive === false || offline || !activeMotion) return null;
-  return (
-    <div className="absolute right-2 top-2 z-40">
-      <MdCircle className="mr-2 size-2 animate-pulse text-danger shadow-danger drop-shadow-md" />
-    </div>
-  );
-}
 
 type GridLiveContextMenuProps = {
   className?: string;

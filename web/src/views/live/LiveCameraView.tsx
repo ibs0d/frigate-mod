@@ -86,7 +86,6 @@ import {
   MdPersonOff,
   MdPersonSearch,
   MdPhotoCamera,
-  MdCircle,
 } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -116,7 +115,6 @@ import { detectCameraAudioFeatures } from "@/utils/cameraUtil";
 import PtzControlPanel from "@/components/overlay/PtzControlPanel";
 import ObjectSettingsView from "../settings/ObjectSettingsView";
 import { useSearchEffect } from "@/hooks/use-overlay-state";
-import { useCameraActivity } from "@/hooks/use-camera-activity";
 import {
   downloadSnapshot,
   fetchCameraSnapshot,
@@ -198,9 +196,6 @@ export default function LiveCameraView({
   // camera enabled state
   const { payload: enabledState } = useEnabledState(camera.name);
   const cameraEnabled = enabledState === "ON";
-
-  // motion dot
-  const { activeMotion, offline: cameraOffline } = useCameraActivity(camera);
 
   // for audio transcriptions
 
@@ -803,11 +798,6 @@ export default function LiveCameraView({
                 />
               </div>
             </TransformComponent>
-            {activeMotion && !cameraOffline && (
-              <div className="absolute right-4 top-4 z-40">
-                <MdCircle className="size-2 animate-pulse text-danger drop-shadow-md" />
-              </div>
-            )}
             {camera?.audio?.enabled_in_config &&
               audioTranscriptionState == "ON" &&
               transcription != null && (
