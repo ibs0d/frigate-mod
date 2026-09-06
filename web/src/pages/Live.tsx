@@ -17,6 +17,7 @@ function Live() {
   const { t } = useTranslation(["views/live"]);
   const { data: config } = useSWR<FrigateConfig>("config");
   const hasFullCameraAccess = useHasFullCameraAccess();
+  const allowedCameras = useAllowedCameras();
 
   // selection
 
@@ -43,6 +44,32 @@ function Live() {
 
     return false;
   });
+
+  useEffect(() => {
+    if (!config || !loaded) {
+      return;
+    }
+
+    const groups = Object.entries(config.camera_groups)
+      .filter(
+        ([, group]) =>
+          hasFullCameraAccess ||
+          group.cameras.some((camera) => allowedCameras.includes(camera)),
+      )
+      .sort((a, b) => a[1].order - b[1].order);
+    const groupIsAvailable = groups.some(([name]) => name === cameraGroup);
+
+    if (!groupIsAvailable) {
+      setCameraGroup(groups[0]?.[0] ?? "default");
+    }
+  }, [
+    allowedCameras,
+    cameraGroup,
+    config,
+    hasFullCameraAccess,
+    loaded,
+    setCameraGroup,
+  ]);
 
   // fullscreen
 
@@ -109,8 +136,6 @@ function Live() {
   }, [cameraGroup, selectedCameraName, t]);
 
   // settings
-
-  const allowedCameras = useAllowedCameras();
 
   const includesBirdseye = useMemo(() => {
     // Users without access to all cameras should not have access to birdseye

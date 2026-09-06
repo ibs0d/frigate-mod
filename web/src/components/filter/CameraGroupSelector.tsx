@@ -6,7 +6,6 @@ import {
 } from "@/types/frigateConfig";
 import { isDesktop, isMobile } from "react-device-detect";
 import useSWR from "swr";
-import { MdHome } from "react-icons/md";
 import { Button, buttonVariants } from "../ui/button";
 import {
   useCallback,
@@ -229,25 +228,6 @@ export function CameraGroupSelector({ className }: CameraGroupSelectorProps) {
 
   const groupButtons = (afterSelect?: () => void) => {
     const buttons = [
-      <Button
-        key="default-group"
-        className={cn(
-          "shrink-0",
-          group == "default"
-            ? "bg-blue-900 bg-opacity-60 text-selected focus:bg-blue-900 focus:bg-opacity-60"
-            : "bg-secondary text-secondary-foreground",
-        )}
-        aria-label={t("menu.live.allCameras", { ns: "common" })}
-        size="sm"
-        onClick={() => {
-          if (group) {
-            setGroup("default", true);
-          }
-          afterSelect?.();
-        }}
-      >
-        <MdHome className="size-5" />
-      </Button>,
       ...groups.map(([name, config]) => (
         <Button
           key={name}
@@ -309,29 +289,6 @@ export function CameraGroupSelector({ className }: CameraGroupSelectorProps) {
             className,
           )}
         >
-          <Tooltip open={tooltip == "default"}>
-            <TooltipTrigger asChild>
-              <Button
-                className={
-                  group == "default"
-                    ? "bg-blue-900 bg-opacity-60 text-selected focus:bg-blue-900 focus:bg-opacity-60"
-                    : "bg-secondary text-secondary-foreground focus:bg-secondary focus:text-secondary-foreground"
-                }
-                aria-label={t("menu.live.allCameras", { ns: "common" })}
-                size="xs"
-                onClick={() => (group ? setGroup("default", true) : null)}
-                onMouseEnter={() => showTooltip("default")}
-                onMouseLeave={() => showTooltip(undefined)}
-              >
-                <MdHome className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipPortal>
-              <TooltipContent className="" side="right">
-                {t("menu.live.allCameras", { ns: "common" })}
-              </TooltipContent>
-            </TooltipPortal>
-          </Tooltip>
           {groups.map(([name, config]) => {
             return (
               <Tooltip key={name} open={tooltip == name}>
