@@ -954,7 +954,7 @@ export default function DraggableGridLayout({
             }
             audioState={audioStates[camera.name]}
             toggleAudio={() => toggleAudio(camera.name)}
-            statsState={statsStates[camera.name] ?? true}
+            statsState={statsStates[camera.name] ?? false}
             toggleStats={() => toggleStats(camera.name)}
             volumeState={volumeStates[camera.name]}
             setVolumeState={(value) =>
@@ -1020,11 +1020,14 @@ export default function DraggableGridLayout({
                   }
                   playInBackground={false}
                   showStats={false}
-                  onStatsUpdate={(stats) =>
-                    setCameraStatsData((prev) => ({
-                      ...prev,
-                      [camera.name]: stats,
-                    }))
+                  onStatsUpdate={
+                    statsStates[camera.name]
+                      ? (stats) =>
+                          setCameraStatsData((prev) => ({
+                            ...prev,
+                            [camera.name]: stats,
+                          }))
+                      : undefined
                   }
                   onLoadingChange={(loading) =>
                     setCameraLoadingStates((prev) => ({

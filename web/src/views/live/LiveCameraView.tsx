@@ -355,7 +355,7 @@ export default function LiveCameraView({
     false,
   );
 
-  const [showStats, setShowStats] = useState(true);
+  const [showStats, setShowStats] = useState(false);
   const [debug, setDebug] = useState(false);
 
   useSearchEffect("debug", (value: string) => {
