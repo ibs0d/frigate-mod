@@ -152,6 +152,18 @@ export default function LiveCameraView({
   const [{ width: windowWidth, height: windowHeight }] =
     useResizeObserver(window);
 
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (event.button !== 2) {
+        return;
+      }
+
+      event.preventDefault();
+      navigate(-1);
+    },
+    [navigate],
+  );
+
   // supported features
 
   const [streamName, setStreamName, streamNameLoaded] =
@@ -531,6 +543,8 @@ export default function LiveCameraView({
       <Toaster position="top-center" closeButton={true} />
       <div
         ref={mainRef}
+        data-testid="live-camera-view"
+        onContextMenu={handleContextMenu}
         className={
           fullscreen
             ? `fixed inset-0 z-30 bg-black`

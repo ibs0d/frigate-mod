@@ -66,6 +66,22 @@ test.describe("Live Single Camera — desktop controls @critical", () => {
     await expect(live.historyButton).toBeVisible();
   });
 
+  test("right-clicking the single-camera view navigates back", async ({
+    frigateApp,
+  }) => {
+    await frigateApp.goto("/");
+    const live = new LivePage(frigateApp.page, true);
+    await live.cameraCard("front_door").first().click({ timeout: 10_000 });
+    await expect(frigateApp.page).toHaveURL(/#front_door/);
+
+    await frigateApp.page
+      .getByTestId("live-camera-view")
+      .click({ button: "right" });
+
+    await expect(frigateApp.page).not.toHaveURL(/#front_door/);
+    await expect(live.cameraCard("front_door").first()).toBeVisible();
+  });
+
   test("feature toggles render (at least 3)", async ({ frigateApp }) => {
     await frigateApp.goto("/#front_door");
     const live = new LivePage(frigateApp.page, true);
