@@ -12,12 +12,15 @@ import { useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 import { useAllowedCameras } from "@/hooks/use-allowed-cameras";
 import { useHasFullCameraAccess } from "@/hooks/use-has-full-camera-access";
+import { isAppFullscreen, useIsVahtaRole } from "@/hooks/use-is-vahta-role";
+import { cn } from "@/lib/utils";
 
 function Live() {
   const { t } = useTranslation(["views/live"]);
   const { data: config } = useSWR<FrigateConfig>("config");
   const hasFullCameraAccess = useHasFullCameraAccess();
   const allowedCameras = useAllowedCameras();
+  const isVahtaRole = useIsVahtaRole();
 
   // selection
 
@@ -75,8 +78,12 @@ function Live() {
 
   const mainRef = useRef<HTMLDivElement | null>(null);
 
-  const { fullscreen, toggleFullscreen, supportsFullScreen } =
-    useFullscreen(mainRef);
+  const {
+    fullscreen: browserFullscreen,
+    toggleFullscreen,
+    supportsFullScreen,
+  } = useFullscreen(mainRef);
+  const fullscreen = isAppFullscreen(isVahtaRole, browserFullscreen);
 
   useKeyboardListener(["f"], (key, modifiers) => {
     if (!modifiers.down) {
@@ -198,7 +205,14 @@ function Live() {
   }, [config, selectedCameraName, allowedCameras]);
 
   return (
-    <div className="size-full" ref={mainRef}>
+    <div
+      data-testid="live-page"
+      className={cn(
+        "size-full",
+        isVahtaRole && "fixed inset-0 z-50 bg-background",
+      )}
+      ref={mainRef}
+    >
       {selectedCameraName === "birdseye" &&
       hasFullCameraAccess &&
       config?.birdseye?.enabled ? (

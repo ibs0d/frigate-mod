@@ -14,11 +14,35 @@ import {
   expectBodyInteractive,
   waitForBodyInteractive,
 } from "../helpers/overlay-interaction";
+import { adminProfile } from "../fixtures/mock-data/profile";
 
 const PTZ_CAMERA = "front_door";
 const PRESET_NAMES = ["home", "driveway", "front_porch"];
 
 test.describe("Live Dashboard @critical", () => {
+  test("vahta role opens the live UI across the viewport", async ({
+    frigateApp,
+  }) => {
+    test.skip(frigateApp.isMobile, "Desktop shell has the navigation sidebar");
+    await frigateApp.installDefaults({
+      profile: adminProfile({ role: "night_vahta" }),
+    });
+    await frigateApp.goto("/");
+
+    const livePage = frigateApp.page.getByTestId("live-page");
+    await expect(livePage).toHaveCSS("position", "fixed");
+    await expect(livePage).toHaveCSS("inset", "0px");
+
+    const bounds = await livePage.boundingBox();
+    const viewport = frigateApp.page.viewportSize();
+    expect(bounds).toEqual({
+      x: 0,
+      y: 0,
+      width: viewport?.width,
+      height: viewport?.height,
+    });
+  });
+
   test("every configured camera renders on the dashboard", async ({
     frigateApp,
   }) => {
