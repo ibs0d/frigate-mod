@@ -53,10 +53,7 @@ import LiveContextMenu from "@/components/menu/LiveContextMenu";
 import { useStreamingSettings } from "@/context/streaming-settings-provider";
 import { useTranslation } from "react-i18next";
 import useKeyboardListener from "@/hooks/use-keyboard-listener";
-import {
-  isFitToScreenEnabled,
-  useIsVahtaRole,
-} from "@/hooks/use-is-vahta-role";
+import { useIsVahtaRole } from "@/hooks/use-is-vahta-role";
 import {
   CAMERA_ZOOM_MIN_SCALE,
   CameraZoomRuntimeTransform,
@@ -137,13 +134,9 @@ export default function DraggableGridLayout({
   const [gridLayout, setGridLayout, isGridLayoutLoaded] =
     useUserPersistence<Layout>(`${cameraGroup}-draggable-layout`);
 
-  const [persistedFitToScreen, setFitToScreen] = useUserPersistence(
+  const [fitToScreen, setFitToScreen] = useUserPersistence(
     `${cameraGroup}-fitToScreen`,
     true,
-  );
-  const fitToScreen = isFitToScreenEnabled(
-    isVahtaRole,
-    persistedFitToScreen,
   );
 
   const [fitCameraOrder, setFitCameraOrder] = useUserPersistence<string[]>(
@@ -493,7 +486,7 @@ export default function DraggableGridLayout({
     // Сбросить сохранённый порядок только если изменился набор камер
     // (добавили/удалили камеру), не при изменении размера окна
     setFitCameraOrder(undefined);
-  }, [cameraKey, includeBirdseye, setFitCameraOrder]);
+  }, [cameraKey, includeBirdseye]);
 
   const handleFitDragStop = useCallback(
     (
