@@ -199,28 +199,6 @@ function MSEPlayer({
 
     setIsPlaying(false);
 
-    // A dashboard can tear down several MSE players at once when opening a
-    // camera. Explicitly release each decoder and object URL instead of
-    // waiting for garbage collection, otherwise the new single-camera player
-    // can be starved of media resources while the old grid players linger.
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-
-      if (video.src.startsWith("blob:")) {
-        URL.revokeObjectURL(video.src);
-      }
-
-      video.removeAttribute("src");
-      video.srcObject = null;
-      video.load();
-    }
-
-    msRef.current = null;
-    mseCodecRef.current = null;
-    ondataRef.current = null;
-    onmessageRef.current = {};
-
     if (wsRef.current) {
       const ws = wsRef.current;
       wsRef.current = null;
