@@ -178,7 +178,7 @@ export default function UiSettingsView() {
     false,
   );
   const [playbackRate, setPlaybackRate] = useUserPersistence("playbackRate", 1);
-  const [weekStartsOn, setWeekStartsOn] = useUserPersistence("weekStartsOn", 0);
+  const [weekStartsOn, setWeekStartsOn] = useUserPersistence("weekStartsOn", 1);
   const [alertVideos, setAlertVideos] = useUserPersistence("alertVideos", true);
   const [fallbackTimeout, setFallbackTimeout] = useUserPersistence(
     "liveFallbackTimeout",

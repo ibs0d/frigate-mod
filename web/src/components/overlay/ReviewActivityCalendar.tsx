@@ -54,7 +54,7 @@ export default function ReviewActivityCalendar({
 }: ReviewActivityCalendarProps) {
   const { data: config } = useSWR<FrigateConfig>("config");
   const timezone = useTimezone(config);
-  const [weekStartsOn] = useUserPersistence("weekStartsOn", 0);
+  const [weekStartsOn] = useUserPersistence("weekStartsOn", 1);
 
   const disabledDates = useMemo(() => {
     // day cells are TZDate in `timezone`, so the cutoff must be a real instant
@@ -186,7 +186,7 @@ export function TimezoneAwareCalendar({
   onSelect,
   recordingsSummary,
 }: TimezoneAwareCalendarProps) {
-  const [weekStartsOn] = useUserPersistence("weekStartsOn", 0);
+  const [weekStartsOn] = useUserPersistence("weekStartsOn", 1);
 
   // When a recordings summary is supplied, underline days that have footage
   const recordingsModifier = useMemo(() => {

@@ -106,7 +106,7 @@ export function CalendarRangeFilterButton({
   const { t } = useTranslation(["components/filter"]);
   const { data: config } = useSWR<FrigateConfig>("config");
   const timezone = useTimezone(config);
-  const [weekStartsOn] = useUserPersistence("weekStartsOn", 0);
+  const [weekStartsOn] = useUserPersistence("weekStartsOn", 1);
   const [open, setOpen] = useState(false);
 
   const selectedDate = useFormattedRange(
