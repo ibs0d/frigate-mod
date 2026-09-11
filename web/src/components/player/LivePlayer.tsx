@@ -43,6 +43,7 @@ type LivePlayerProps = {
   playAudio?: boolean;
   volume?: number;
   playInBackground: boolean;
+  suspendPlayback?: boolean;
   micEnabled?: boolean; // only webrtc supports mic
   iOSCompatFullScreen?: boolean;
   pip?: boolean;
@@ -71,6 +72,7 @@ export default function LivePlayer({
   playAudio = false,
   volume,
   playInBackground = false,
+  suspendPlayback = false,
   micEnabled = false,
   iOSCompatFullScreen = false,
   pip,
@@ -316,7 +318,7 @@ export default function LivePlayer({
         key={"webrtc_" + key}
         className={`size-full ${liveReady ? "" : "hidden"}`}
         camera={streamName}
-        playbackEnabled={cameraActive || liveReady}
+        playbackEnabled={!suspendPlayback && (cameraActive || liveReady)}
         getStats={showStats || !!onStatsUpdate}
         setStats={setStats}
         audioEnabled={playAudio}
@@ -335,7 +337,7 @@ export default function LivePlayer({
           key={"mse_" + key}
           className={`size-full ${liveReady ? "" : "hidden"}`}
           camera={streamName}
-          playbackEnabled={cameraActive || liveReady}
+          playbackEnabled={!suspendPlayback && (cameraActive || liveReady)}
           audioEnabled={playAudio}
           volume={volume}
           playInBackground={playInBackground}
@@ -364,7 +366,8 @@ export default function LivePlayer({
           width={cameraConfig.detect.width}
           height={cameraConfig.detect.height}
           playbackEnabled={
-            cameraActive || !showStillWithoutActivity || liveReady
+            !suspendPlayback &&
+            (cameraActive || !showStillWithoutActivity || liveReady)
           }
           useWebGL={useWebGL}
           setStats={setStats}

@@ -73,6 +73,7 @@ type DraggableGridLayoutProps = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   includeBirdseye: boolean;
   onSelectCamera: (camera: string) => void;
+  suspendPlayback: boolean;
   windowVisible: boolean;
   visibleCameras: string[];
   isEditMode: boolean;
@@ -97,6 +98,7 @@ export default function DraggableGridLayout({
   cameraRef,
   includeBirdseye,
   onSelectCamera,
+  suspendPlayback,
   windowVisible,
   visibleCameras,
   isEditMode,
@@ -486,7 +488,7 @@ export default function DraggableGridLayout({
     // Сбросить сохранённый порядок только если изменился набор камер
     // (добавили/удалили камеру), не при изменении размера окна
     setFitCameraOrder(undefined);
-  }, [cameraKey, includeBirdseye]);
+  }, [cameraKey, includeBirdseye, setFitCameraOrder]);
 
   const handleFitDragStop = useCallback(
     (
@@ -1017,6 +1019,7 @@ export default function DraggableGridLayout({
                     preferredLiveModes[camera.name] ?? "mse"
                   }
                   playInBackground={false}
+                  suspendPlayback={suspendPlayback}
                   showStats={false}
                   onStatsUpdate={
                     statsStates[camera.name]

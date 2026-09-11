@@ -63,6 +63,7 @@ type LiveDashboardViewProps = {
   cameraGroup: string;
   includeBirdseye: boolean;
   onSelectCamera: (camera: string) => void;
+  suspendPlayback: boolean;
   fullscreen: boolean;
   toggleFullscreen: () => void;
 };
@@ -71,6 +72,7 @@ export default function LiveDashboardView({
   cameraGroup,
   includeBirdseye,
   onSelectCamera,
+  suspendPlayback,
   fullscreen,
   toggleFullscreen,
 }: LiveDashboardViewProps) {
@@ -614,6 +616,7 @@ export default function LiveDashboardView({
                         alwaysShowCameraName={displayCameraNames}
                         useWebGL={useWebGL}
                         playInBackground={false}
+                        suspendPlayback={suspendPlayback}
                         showStats={statsStates[camera.name] ?? false}
                         streamName={streamName}
                         onClick={() => onSelectCamera(camera.name)}
@@ -668,6 +671,7 @@ export default function LiveDashboardView({
               cameraRef={cameraRef}
               includeBirdseye={includeBirdseye}
               onSelectCamera={onSelectCamera}
+              suspendPlayback={suspendPlayback}
               windowVisible={windowVisible}
               visibleCameras={visibleCameras}
               isEditMode={isEditMode}

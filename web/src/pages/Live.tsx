@@ -8,7 +8,7 @@ import LiveCameraView from "@/views/live/LiveCameraView";
 import LiveDashboardView from "@/views/live/LiveDashboardView";
 import { useTranslation } from "react-i18next";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useAllowedCameras } from "@/hooks/use-allowed-cameras";
 import { useHasFullCameraAccess } from "@/hooks/use-has-full-camera-access";
@@ -25,10 +25,31 @@ function Live() {
   // selection
 
   const [selectedCameraName, setSelectedCameraName] = useHashState();
+  const [pendingCameraName, setPendingCameraName] = useState<string>();
   const [cameraGroup, setCameraGroup, loaded] = useUserPersistedOverlayState(
     "cameraGroup",
     "default" as string,
   );
+
+  const selectDashboardCamera = useCallback((cameraName: string) => {
+    setPendingCameraName(cameraName);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingCameraName) {
+      return;
+    }
+
+    // Large dashboards can have enough active decoders to delay creation of
+    // the detail player. Give the grid one event-loop turn to disconnect its
+    // streams before mounting the selected camera.
+    const timer = window.setTimeout(() => {
+      setSelectedCameraName(pendingCameraName);
+      setPendingCameraName(undefined);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [pendingCameraName, setSelectedCameraName]);
 
   useSearchEffect("group", (cameraGroup) => {
     if (config && cameraGroup && loaded) {
@@ -236,7 +257,8 @@ function Live() {
           cameras={cameras}
           cameraGroup={cameraGroup ?? "default"}
           includeBirdseye={includesBirdseye}
-          onSelectCamera={setSelectedCameraName}
+          onSelectCamera={selectDashboardCamera}
+          suspendPlayback={pendingCameraName != undefined}
           fullscreen={fullscreen}
           toggleFullscreen={toggleFullscreen}
         />
