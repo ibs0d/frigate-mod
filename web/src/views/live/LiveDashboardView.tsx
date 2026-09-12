@@ -567,6 +567,7 @@ export default function LiveDashboardView({
                   return (
                     <LiveContextMenu
                       className={grow}
+                      disabled={isVahtaRole}
                       key={camera.name}
                       camera={camera.name}
                       cameraGroup={cameraGroup}

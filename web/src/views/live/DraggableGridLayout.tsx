@@ -942,6 +942,7 @@ export default function DraggableGridLayout({
         return (
           <GridLiveContextMenu
             className="size-full"
+            disabled={isVahtaRole}
             key={camera.name}
             camera={camera.name}
             streamName={streamName}
@@ -1351,6 +1352,7 @@ const BirdseyeLivePlayerGridItem = React.forwardRef<
 
 type GridLiveContextMenuProps = {
   className?: string;
+  disabled?: boolean;
   style?: React.CSSProperties;
   onMouseDown?: React.MouseEventHandler<HTMLDivElement>;
   onMouseUp?: React.MouseEventHandler<HTMLDivElement>;
@@ -1382,6 +1384,7 @@ const GridLiveContextMenu = React.forwardRef<
   (
     {
       className,
+      disabled,
       style,
       onMouseDown,
       onMouseUp,
@@ -1419,6 +1422,7 @@ const GridLiveContextMenu = React.forwardRef<
       >
         <LiveContextMenu
           className={className}
+          disabled={disabled}
           camera={camera}
           streamName={streamName}
           cameraGroup={cameraGroup}

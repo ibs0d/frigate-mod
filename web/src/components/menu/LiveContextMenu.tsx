@@ -53,6 +53,7 @@ import { LiveStreamMetadata } from "@/types/live";
 
 type LiveContextMenuProps = {
   className?: string;
+  disabled?: boolean;
   camera: string;
   streamName: string;
   cameraGroup?: string;
@@ -74,6 +75,7 @@ type LiveContextMenuProps = {
 };
 export default function LiveContextMenu({
   className,
+  disabled = false,
   camera,
   streamName,
   cameraGroup,
@@ -269,6 +271,17 @@ export default function LiveContextMenu({
     });
     return t("time.untilForTime", { ns: "common", time });
   };
+
+  if (disabled) {
+    return (
+      <div
+        className={cn("w-full", className)}
+        onContextMenu={(event) => event.preventDefault()}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className={cn("w-full", className)}>

@@ -191,6 +191,26 @@ test.describe("Live Context Menu (desktop) @critical", () => {
     await expect(menu).toBeVisible({ timeout: 5_000 });
   });
 
+  test("right-click is disabled on the grid for vahta roles", async ({
+    frigateApp,
+  }) => {
+    await frigateApp.installDefaults({
+      profile: adminProfile({ role: "night_vahta" }),
+    });
+    await frigateApp.goto("/");
+    const live = new LivePage(frigateApp.page, true);
+
+    await live.cameraCard("front_door").first().click({
+      button: "right",
+      timeout: 10_000,
+    });
+
+    await expect(
+      frigateApp.page.locator('[role="menu"], [data-radix-menu-content]'),
+    ).toHaveCount(0);
+    await expect(frigateApp.page).not.toHaveURL(/#front_door/);
+  });
+
   test("context menu closes on Escape and leaves body interactive", async ({
     frigateApp,
   }) => {
